@@ -75,6 +75,30 @@ def main() -> int:
     #   models. What does this measurement tell you about switching between
     #   them inside one request, and what would you do instead?
 
+    subprocess.run(["ollama", "stop", SMALL.name], check=False)
+
+    cold_reply, cold_secs = timed(client, SHORT, SMALL.name)
+    rows.append({
+        "case": "cold start", "model": SMALL.name, "seconds": round(cold_secs, 3),
+        "prompt_tokens": cold_reply.usage.prompt_tokens,
+        "completion_tokens": cold_reply.usage.completion_tokens,
+    })
+
+    warm_reply, warm_secs = timed(client, SHORT, SMALL.name)
+    rows.append({
+        "case": "warm start", "model": SMALL.name, "seconds": round(warm_secs, 3),
+        "prompt_tokens": warm_reply.usage.prompt_tokens,
+        "completion_tokens": warm_reply.usage.completion_tokens,
+    })
+
+    print(f"cold start {cold_secs:>6.2f}s  "
+          f"in {cold_reply.usage.prompt_tokens:>4} "
+          f"out {cold_reply.usage.completion_tokens:>4}")
+    print(f"warm start {warm_secs:>6.2f}s  "
+          f"in {warm_reply.usage.prompt_tokens:>4} "
+          f"out {warm_reply.usage.completion_tokens:>4}")
+    print(f"ratio cold/warm = {cold_secs / max(warm_secs, 1e-9):.2f}x")
+
     # TODO 8. Estimate what a real evaluation run would cost hosted.
     #
     #   In week 10 you build a golden set and run it. Assume 200 cases, each

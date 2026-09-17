@@ -1,0 +1,33 @@
+{
+  "rows": [
+    {
+      "case": "short",
+      "model": "qwen3:4b-instruct",
+      "seconds": 1.802,
+      "prompt_tokens": 20,
+      "completion_tokens": 3
+    },
+    {
+      "case": "long",
+      "model": "qwen3:4b-instruct",
+      "seconds": 4.974,
+      "prompt_tokens": 38,
+      "completion_tokens": 200
+    },
+    {
+      "case": "cold start",
+      "model": "qwen3:4b-instruct",
+      "seconds": 1.286,
+      "prompt_tokens": 20,
+      "completion_tokens": 3
+    },
+    {
+      "case": "warm start",
+      "model": "qwen3:4b-instruct",
+      "seconds": 0.09,
+      "prompt_tokens": 20,
+      "completion_tokens": 3
+    }
+  ],
+  "price_list_date": "2026-08-10"
+}
