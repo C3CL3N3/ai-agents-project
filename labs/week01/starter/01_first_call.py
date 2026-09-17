@@ -45,6 +45,14 @@ def main() -> int:
         #   Assign the result to `reply`.
         reply = None
 
+        started = time.perf_counter()
+        reply = client.chat.completions.create(
+            model=SMALL.name,
+            messages=[{"role": "user", "content": QUESTION}],
+            temperature=0.0,
+            max_tokens=200,
+        )
+
         elapsed = time.perf_counter() - started
 
         if reply is None:
@@ -68,7 +76,15 @@ def main() -> int:
     #   d. the elapsed time           `elapsed`, computed above
     #      Which part of it would a user actually feel?
     #
+    answer = f"Answer: {reply.choices[0].message.content}"
+    finish_reason = f"Finish reason: {reply.choices[0].finish_reason}"
+    token_counts = f"Prompt tokens: {reply.usage.prompt_tokens}, Completion tokens: {reply.usage.completion_tokens}"
+    elapsed_time = f"Elapsed time: {elapsed}"
     print("\n--- TODO 2: print the four things here ---\n")
+    print(answer, end="\n")
+    print(finish_reason, end="\n")
+    print(token_counts, end="\n")
+    print(elapsed_time)
 
     # TODO 3. Close the trace.
     #   Call rec.finish(...) with:
@@ -85,6 +101,10 @@ def main() -> int:
     # A free number, so that cost is visible from day one. Local calls cost
     # nothing, which is convenient and also a distortion, so the course keeps
     # an estimate of what the same call would cost on a metered endpoint.
+
+    rec.finish(output=reply.choices[0].message.content, outcome="ok")
+
+
     if reply is not None:
         est = estimate(reply.usage.prompt_tokens,
                        reply.usage.completion_tokens, tier="small")
