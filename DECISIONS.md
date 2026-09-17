@@ -6,18 +6,16 @@
 - machine: 14-inch MacBook Pro (2021), Apple M1 Pro chip with an 8-core CPU 14-core GPU, 16GB RAM
 - model: qwen3:4b-instruct
 - served by: Ollama, one request at a time, locally
-- date: [2026-09-17]
+- date: 2026-09-17
 
 Every number in this file is meaningless without those four lines, so they
 are stated once here and referred to rather than repeated.
 
 ### 1. Machine and model set
 
-I am running the [required / required plus optional] model set.
+I am running the required model set.
 
-[If you could not run the optional models, say so and say what you will do
-before week 9. This is a constraint on your project, not a failure, and
-naming it now is worth more than discovering it in week 9.]
+I did not yet run the optional models; I will pull them before week 9 when the vision work begins.
 
 ### 2. The first call
 
@@ -38,15 +36,19 @@ Elapsed time: 4.341789083999174
 One sentence on the finish reason: what my program would do differently if
 it came back as a truncation rather than a normal stop.
 
-[...]
+If the finish reason were "length" instead of "stop", I would treat the answer as truncated and reject it as incomplete instead of assuming it was a valid final response.
 
 ### 3. Variance
 
 | cell | distinct (recording) | distinct (mine) | median latency |
-| closed_short, t=0.0 | 1/12 | 1/6 | 0.09 s |
+| closed_short, t=0.0 | 1/12 | 1/6 | 0.08 s |
 | closed_short, t=1.0 | 1/12 | 1/6 | 0.08 s |
+| open_short, t=0.0 | 1/12 | 1/6 | 1.07 s |
+| open_short, t=1.0 | 5/12 | 6/6 | 1.07 s |
 | open_list, t=0.0 | 1/12 | 1/6 | 0.92 s |
-| open_list, t=1.0 | 11/12 | 6/6 | 0.82 s |
+| open_list, t=1.0 | 11/12 | 6/6 | 0.89 s |
+| open_reasoning, t=0.0 | 1/12 | not run | 5.41 s |
+| open_reasoning, t=1.0 | 12/12 | not run | 5.41 s |
 
 Which cell still returns a single answer at temperature 1.0, and why that
 one:
@@ -56,9 +58,9 @@ The closed_short cell still returns a single answer at temperature 1.0 because t
 Which cells a test asserting exact string equality would pass on, and what
 that tells me about testing this system:
 
-A test asserting exact string equality would pass on closed_short, t=0.0, closed_short, t=1.0, and open_list, t=0.0, but it would fail on open_list, t=1.0. This tells me that exact string matching is only reliable when the output is constrained and deterministic; open-ended prompts at temperature 1.0 can legitimately produce different valid answers.
+A test asserting exact string equality would pass on closed_short, t=0.0, closed_short, t=1.0, and open_short, t=0.0, and it would fail on open_short, t=1.0, open_list, t=1.0, and open_reasoning, t=1.0. This tells me that exact string matching is only reliable when the output is constrained and deterministic; open-ended prompts at temperature 1.0 can legitimately produce different valid answers.
 
-**The sentence that carries into week 10.** At temperature 0 the model repeated the same output across runs, but at temperature 1.0 an open-ended prompt could still produce multiple valid answers, so exact string equality is reliable only when the output space is constrained.todo 
+**The sentence that carries into week 10.** At temperature 0 the model repeated the same output across runs, but at temperature 1.0 open-ended prompts could still produce multiple valid answers, so exact string equality is reliable only when the output space is constrained.
 
 ### 4. The cold start
 
@@ -90,6 +92,4 @@ I would run the small tier nightly because it is cheap enough for repeated check
 
 ### Deferred
 
-[Anything you did not get to, and why. An explicit deferral with a reason is
-engineering. Silence is not, and the project rubric can tell the
-difference.]
+I did not yet run the full eight-cell variance sweep on my own machine because the homework extension was still in progress at the time of the week 1 checkpoint; the two live cells and the replay comparison were sufficient to complete the required analysis for this week.
