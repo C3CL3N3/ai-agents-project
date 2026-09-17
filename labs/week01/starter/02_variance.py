@@ -54,7 +54,10 @@ def count_distinct(texts: list[str]) -> int:
     noticing that you cannot is the point. Week 10 spends the whole session
     on it.
     """
-    raise NotImplementedError("TODO 4: count the distinct strings")
+    # raise NotImplementedError("TODO 4: count the distinct strings")
+
+    unique_texts = set(texts)
+    return len(unique_texts)
 
 
 def summarize(cell_name: str, texts: list[str], latencies: list[float]) -> dict:

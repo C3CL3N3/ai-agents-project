@@ -102,7 +102,7 @@ def main() -> int:
         "meta": {
             "model": MODEL,
             "recorded_at": time.strftime("%Y-%m-%d"),
-            "machine": "Apple M4, 16 GB, Ollama, one request at a time",
+            "machine": "Apple M1 Pro, 16 GB, Ollama, one request at a time",
             "runs_per_cell": RUNS,
             "seed_at_temperature_0": 42,
             "what_to_notice": [
