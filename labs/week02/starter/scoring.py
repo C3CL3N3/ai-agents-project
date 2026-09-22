@@ -71,8 +71,31 @@ def score_one(record, gold, document_text: str) -> dict[str, FieldResult]:
 
     Return a dict keyed by field name.
     """
-    raise NotImplementedError("TODO 3: score the four fields")
+    #raise NotImplementedError("TODO 3: score the four fields")
+    quote_ok = bool(record.quote) and record.quote in document_text
 
+    return {
+        "category": FieldResult(
+            correct=record.category == gold.category,
+            got=record.category,
+            expected=gold.category,
+        ),
+        "urgency": FieldResult(
+            correct=record.urgency == gold.urgency,
+            got=record.urgency,
+            expected=gold.urgency,
+        ),
+        "due_date": FieldResult(
+            correct=record.due_date == gold.due_date,
+            got=record.due_date,
+            expected=gold.due_date,
+        ),
+        "quote": FieldResult(
+            correct=quote_ok,
+            got=record.quote,
+            expected="exact substring of source",
+            note="" if quote_ok else "quote is not an exact source substring",
+        ),}
 
 # --------------------------------------------------------------------------
 # TODO 4. Aggregate.
@@ -92,7 +115,32 @@ def score_all(records, golds, docs) -> Scoreboard:
     you will be asked which records failed and why, not what your average
     was.
     """
-    raise NotImplementedError("TODO 4: aggregate into a Scoreboard")
+    #raise NotImplementedError("TODO 4: aggregate into a Scoreboard")
+    board = Scoreboard(total=len(docs))
+
+    for record, doc in zip(records, docs):
+        gold = golds[doc.id]
+        if record is None:
+            board.invalid += 1
+
+            for field in FIELDS:
+                board.failures.append(
+                    (doc.id, field, "validation failed")
+                )
+            continue
+
+        results = score_one(record, gold, doc.text)
+
+        for field, result in results.items():
+            if result.correct:
+                board.hits[field] += 1
+            else:
+                reason = result.note or (
+                    f"got {result.got!r}, expected {result.expected!r}"
+                )
+                board.failures.append((doc.id, field, reason))
+
+    return board
 
 
 # --------------------------------------------------------------------------

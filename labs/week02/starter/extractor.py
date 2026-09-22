@@ -53,29 +53,64 @@ class ServiceRequest(BaseModel):
     #          and a Field(description=...) stating the convention. The
     #          description is sent to the model, so it is prompt engineering
     #          rather than documentation.
+    due_date: Literal["year", "month", "day", "yyyy", "mm", "dd", "end", "begin", "date", "due", "deadline"] | None
     # TODO 1b: quote. A string, with a description that says "verbatim" in
     #          words a model will act on. Consider a max_length.
+    quote: str = Field(
+        description=(
+            "Copy a short span from the message verbatim, character for character, "
+            "to support the urgency decision. Do not translate or paraphrase it."
+        ),
+        max_length=200,
+    )
 
 
 # --------------------------------------------------------------------------
 # TODO 2. Build the messages.
 # --------------------------------------------------------------------------
 
+# SYSTEM_ZERO_SHOT = """\
+# TODO 2a: write the system prompt.
+
+# It has to state, in words a model will follow:
+#   - what the job is
+#   - that messages arrive in English, French, or German
+#   - the allowed values for category and for urgency
+#   - the due_date convention, including what counts as "no date"
+#   - that quote must be copied character for character, not translated
+
+# Write the conventions here even though they are also in the schema. The
+# schema constrains the shape of the answer. The prompt is what tells the
+# model how to decide. Neither one does the other's job.
+# """
 SYSTEM_ZERO_SHOT = """\
-TODO 2a: write the system prompt.
+You extract one structured service-request record from a help-desk message.
+Messages may be written in English, French, or German.
 
-It has to state, in words a model will follow:
-  - what the job is
-  - that messages arrive in English, French, or German
-  - the allowed values for category and for urgency
-  - the due_date convention, including what counts as "no date"
-  - that quote must be copied character for character, not translated
+Choose exactly one category:
+- access: accounts, passwords, permissions, shared mailboxes, or portal login
+- hardware: a broken or missing physical device or server
+- billing: invoices, charges, payments, or supplier references
+- facilities: the building itself, such as doors, heating, windows, lifts, or cleaning
+- other: anything that fits none of these categories
 
-Write the conventions here even though they are also in the schema. The
-schema constrains the shape of the answer. The prompt is what tells the
-model how to decide. Neither one does the other's job.
+Choose exactly one urgency:
+- urgent: someone is blocked now, or there is a safety or security risk
+- standard: work is needed but a normal turnaround is acceptable
+- info: no action is being requested
+
+For due_date, return an ISO date in YYYY-MM-DD format only when the
+message states a calendar date. Dates written as DD/MM/YYYY are European.
+Return null when no date is stated or when the message only contains a
+relative expression such as "as soon as possible" or "before the end of
+the month". Do not calculate a date from a relative expression.
+
+For quote, copy a span from the original message character for character
+that supports your urgency decision. Do not translate, paraphrase, shorten,
+or tidy the quote. It must be an exact substring of the original message.
+
+Return only the structured record.
 """
-
 
 def build_messages(system: str, document_text: str) -> list[dict]:
     """TODO 2b. Return the message list for one document.
@@ -89,7 +124,17 @@ def build_messages(system: str, document_text: str) -> list[dict]:
     instruction and the data are in the same place, a document that contains
     an instruction is indistinguishable from your instruction.
     """
-    raise NotImplementedError("TODO 2b: return the two messages")
+    #raise NotImplementedError("TODO 2b: return the two messages")
+    return [
+        {
+            "role": "system",
+            "content": system,
+        },
+        {
+            "role": "user",
+            "content": document_text,
+        },
+    ]
 
 
 # --------------------------------------------------------------------------
