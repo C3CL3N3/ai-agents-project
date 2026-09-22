@@ -53,7 +53,12 @@ class ServiceRequest(BaseModel):
     #          and a Field(description=...) stating the convention. The
     #          description is sent to the model, so it is prompt engineering
     #          rather than documentation.
-    due_date: Literal["year", "month", "day", "yyyy", "mm", "dd", "end", "begin", "date", "due", "deadline"] | None
+    due_date: str | None = Field(
+        description=(
+            "Use YYYY-MM-DD when the message states a calendar date. "
+            "Use None when it states no date or only a relative expression."
+        )
+    )
     # TODO 1b: quote. A string, with a description that says "verbatim" in
     #          words a model will act on. Consider a max_length.
     quote: str = Field(

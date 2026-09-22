@@ -22,6 +22,9 @@ import argparse
 from documents import DOCS, GOLD
 from extractor import (PROMPT_VERSION, SYSTEM_ZERO_SHOT, get_client,
                        run_variant)
+#Our imports
+from project.contracts import GoldCase, GoldSet
+from project.trace import write_json
 
 from project.trace import write_json
 
@@ -71,7 +74,31 @@ def main() -> int:
     #   careful cases now is the cheapest week 10 you will ever have.
     #
     #   Then run: python -m project.verify
+    cases = []
 
+    for doc in DOCS:
+        gold = GOLD[doc.id]
+
+        cases.append(
+            GoldCase(
+                case_id=doc.id,
+                week_added=2,
+                question=doc.text,
+                expected={
+                    "category": gold.category,
+                    "urgency": gold.urgency,
+                    "due_date": gold.due_date,
+                },
+                expected_behavior=(
+                    f"extracts category {gold.category} and urgency "
+                    f"{gold.urgency}, with due date {gold.due_date!r}"
+                ),
+                slice_tags=[doc.lang],
+            )
+        )
+
+    gold_set = GoldSet(cases=cases)
+    write_json("artifacts/goldset.json", gold_set)
     return 0
 
 
