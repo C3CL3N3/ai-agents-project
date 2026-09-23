@@ -1,4 +1,5 @@
 # Decisions
+
 ## Week 1
 
 **Run conditions.** Everything below was produced on:
@@ -81,7 +82,7 @@ A 200-case golden set, at the token cost of my long case:
 | small tier | 0.00017 EUR | 3.29 EUR |
 | large tier | 0.01246 EUR | 244.14 EUR |
 
-Computation: long case = 38 in, 200 out. Small = (38/1e6 * 0.20) + (200/1e6 * 0.80) = 0.000168 EUR/run; semester = 0.000168 * 200 * 7 * 14 = 3.29 EUR. Large = (38/1e6 * 12.00) + (200/1e6 * 60.00) = 0.012456 EUR/run; semester = 0.012456 * 200 * 7 * 14 = 244.14 EUR.
+Computation: long case = 38 in, 200 out. Small = (38/1e6 _ 0.20) + (200/1e6 _ 0.80) = 0.000168 EUR/run; semester = 0.000168 _ 200 _ 7 _ 14 = 3.29 EUR. Large = (38/1e6 _ 12.00) + (200/1e6 _ 60.00) = 0.012456 EUR/run; semester = 0.012456 _ 200 _ 7 _ 14 = 244.14 EUR.
 
 Estimates against the price list dated 2026-08-10, not measurements. Running locally, my actual monetary cost was zero.
 
@@ -93,3 +94,97 @@ I would run the small tier nightly because it is cheap enough for repeated check
 ### Deferred
 
 I did not yet run the full eight-cell variance sweep on my own machine because the homework extension was still in progress at the time of the week 1 checkpoint; the two live cells and the replay comparison were sufficient to complete the required analysis for this week.
+
+## Week 2
+
+**Run conditions.** model: [ ] | temperature: 0.0 | prompt version: [ ] |
+served locally | date: [YYYY-MM-DD] | scored on: [the recording / my own
+machine]
+
+### 1. The output contract
+
+The conventions I chose, and why:
+
+- due_date, when the message states no date: [ ]
+- due_date, when the message states only a relative expression: [ ]
+- quote, and what "verbatim" means in my scorer: [ ]
+- what my scorer does with a record that failed validation: [ ]
+
+[One sentence on why the last one matters. A scorer that skips the records
+it could not parse reports a number that improves as the model gets worse.]
+
+### 2. Zero-shot, per field
+
+| field | correct | of |
+| category | | 10 |
+| urgency | | 10 |
+| due_date | | 10 |
+| quote | | 10 |
+| invalid records | | 10 |
+
+My prediction, written before block 3: examples will help most on [ ]
+because [ ].
+
+### 3. Few-shot
+
+Examples chosen, and the job each one does:
+
+| example | why it is in the block | field it should move |
+| | | |
+| | | |
+| | | |
+
+| field | zero-shot | few-shot | move |
+| category | 9/10 | 9/10 | 0 |
+| urgency | 10/10 | 10/10 | 0 |
+| due_date | 7/10 | 7/10 | 0 |
+| quote | 10/10 | 8/10 | -2 |
+
+### 4. What got worse
+
+The quote field got worse, from 10/10 to 8/10. The few-shot output copied the
+German REQ-03 quote with `korrigeren` instead of the source's `korrigieren`,
+and added a non-source character to the REQ-04 quote. These are genuine
+substring failures, not scorer noise. The category and due-date errors did
+not disappear: category remained wrong on one record, and three invented due
+dates remained wrong. The examples changed the shape of the quote failures
+by teaching tidied or corrupted copying, rather than fixing an existing
+error.
+
+### 5. What the examples cost
+
+- extra input tokens per call: 310
+- per thousand calls: 310,000
+- estimated euros per thousand calls on the small tier: 62.00, against the
+  price list dated 2026-08-10. Estimate, not a measurement.
+
+### 6. Ship it or not
+
+I would keep the zero-shot variant. Few-shot did not improve category,
+urgency, or due_date, and reduced quote accuracy by two records while adding
+310 input tokens per call. The sample has only ten records, so this is useful
+evidence rather than a confident general conclusion. I would change my mind
+if a larger held-out set showed a repeatable improvement in a field that
+matters more than the quote regression, without introducing new exact-copy
+failures.
+
+### Sensitivity variant
+
+Variant assigned: [ ]. What I changed: [ ]. What moved: [ ].
+
+[If nothing moved, say so. A knob that changes nothing measurable is a real
+result, and it tells the room which knobs are worth arguing about.]
+
+### The gold set
+
+Ten cases written to `artifacts/goldset.json`, tagged by language.
+
+One thing my scorer cannot currently detect:
+
+[This is the most valuable line on the page. An example: "our scorer cannot
+tell a correctly formatted date that is simply the wrong date from a
+correctly extracted one, because it only compares strings."]
+
+### Deferred
+
+[Anything you did not get to, and why.]
