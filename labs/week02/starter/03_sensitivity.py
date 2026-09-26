@@ -17,14 +17,41 @@ One TODO marker.
 from __future__ import annotations
 
 import argparse
+import json
 
-from documents import DOCS, GOLD
+from documents import DOCS, EXAMPLE_POOL, GOLD
 from extractor import SYSTEM_ZERO_SHOT, get_client, run_variant
 from scoring import compare
 
 from project.trace import write_json
 
 VARIANTS = ("baseline", "role", "reordered", "no_delimiter", "english_only")
+
+
+def _build_example_block(examples: list[tuple[object, str]]) -> str:
+    """Render the same few-shot JSON example block used in block 3."""
+    lines = ["Examples of the required input and output format:"]
+    for (document, gold), quote in examples:
+        lines.append(json.dumps({
+            "input": document.text,
+            "output": {
+                "category": gold.category,
+                "urgency": gold.urgency,
+                "due_date": gold.due_date,
+                "quote": quote,
+            },
+        }, ensure_ascii=True))
+    return "\n".join(lines)
+
+
+def _few_shot_examples() -> list[tuple[tuple[object, object], str]]:
+    """The same four examples as the baseline few-shot prompt."""
+    return [
+        ((EXAMPLE_POOL[1][0], EXAMPLE_POOL[1][1]), "Intervention immediate necessaire."),
+        ((EXAMPLE_POOL[2][0], EXAMPLE_POOL[2][1]), "Ersatz waere bis zum 20/09/2026 gut."),
+        ((EXAMPLE_POOL[3][0], EXAMPLE_POOL[3][1]), "For information only"),
+        ((EXAMPLE_POOL[4][0], EXAMPLE_POOL[4][1]), "avant le paiement du 30 septembre 2026."),
+    ]
 
 
 # --------------------------------------------------------------------------
@@ -62,7 +89,28 @@ def build_system(variant: str) -> str:
                    needed to attribute it. Week 13 asks who a system works
                    for, and this is what it costs to answer with evidence.
     """
-    raise NotImplementedError("TODO 8: build the variant")
+    examples = _few_shot_examples()
+    base_prompt = SYSTEM_ZERO_SHOT + "\n" + _build_example_block(examples)
+
+    if variant == "baseline":
+        return base_prompt
+    if variant == "role":
+        return "You are a senior service desk analyst.\n\n" + base_prompt
+    if variant == "reordered":
+        reordered = list(reversed(examples))
+        return SYSTEM_ZERO_SHOT + "\n" + _build_example_block(reordered)
+    if variant == "no_delimiter":
+        return SYSTEM_ZERO_SHOT + _build_example_block(examples)
+    if variant == "english_only":
+        english_examples = [
+            ((EXAMPLE_POOL[0][0], EXAMPLE_POOL[0][1]), "The badge reader at the side entrance rejects my card since the system update."),
+            ((EXAMPLE_POOL[3][0], EXAMPLE_POOL[3][1]), "For information only"),
+            ((EXAMPLE_POOL[5][0], EXAMPLE_POOL[5][1]), "The window in office 2.14 will not close and rain is coming in onto the shared printer below it."),
+            ((EXAMPLE_POOL[0][0], EXAMPLE_POOL[0][1]), "The badge reader at the side entrance rejects my card since the system update."),
+        ]
+        return SYSTEM_ZERO_SHOT + "\n" + _build_example_block(english_examples)
+
+    raise ValueError(f"unknown variant {variant!r}")
 
 
 def main() -> int:
