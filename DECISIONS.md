@@ -4,10 +4,10 @@
 
 **Run conditions.** Everything below was produced on:
 
-- machine: 14-inch MacBook Pro (2021), Apple M1 Pro chip with an 8-core CPU 14-core GPU, 16GB RAM
+- machine: Dell XPS 15 9530, i/-13700H 13th Gen, 14 Cores, 16GB RAM
 - model: qwen3:4b-instruct
 - served by: Ollama, one request at a time, locally
-- date: 2026-09-17
+- date: 2026-09-17 (re-ran numbers on 2026-09-28)
 
 Every number in this file is meaningless without those four lines, so they
 are stated once here and referred to rather than repeated.
