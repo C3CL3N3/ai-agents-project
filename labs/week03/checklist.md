@@ -4,9 +4,9 @@
 
 Six items. Do not move to block 3 until all six are true.
 
-- [ ] The five route definitions written down in one sentence each, **before**
-      any prompt was written, each defined by what the help desk must do
-      rather than by how the message sounds
+- [Y] The five route definitions written down in one sentence each, **before**
+  any prompt was written, each defined by what the help desk must do
+  rather than by how the message sounds
 - [ ] The monolith control running over all twenty four queries, and you can
       say in one sentence why it is a fair opponent rather than a straw man
 - [ ] The router running over the same twenty four, with route, confidence,

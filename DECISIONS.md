@@ -188,3 +188,149 @@ correctly extracted one, because it only compares strings."]
 ### Deferred
 
 [Anything you did not get to, and why.]
+
+## Week 3
+
+**Run conditions.** classifier model: [ ] | answering model: [ ] |
+temperature: 0.0 | served locally | date: [YYYY-MM-DD] | scored on: [the
+recording / my own machine]
+
+### 1. The five route definitions
+
+| route | definition, one sentence, in terms of what the help desk must do |
+| request |Messages where the user is asking for a specific action or service. The help desk is expected to fulfill the request or provide a reason why it cannot be fulfilled. |
+| info |Messages where the user is seeking information about a topic, but not necessarily requesting a specific action. The help desk is expected to provide the requested information. |
+| status | Messages where the user is inquiring about the status of an ongoing request or issue. The help desk is expected to provide an update on the current status.|
+| complaint |Messages where the user is dissatisfied with the service and expresses their displeasure and what they are unhappy about, but does not request a specific action or service. The help desk is expected to acknowledge the complaint and escalate it appropriately. |
+| other | Messages that do not fit into any of the other categories and have nothing to do with the help desk's work.|
+
+My convention for the four ambiguous queries:
+
+IF a message is asking an update on an existing request, the message will be labelled status, even if it mentions the original request.
+If a message both reports a problem and expresses dissatisfaction with the handling, it will be labelled complaint, as acknowleding the issue is the first thing that should be done.
+If a message asks a question while reporting a fault and requesting action, it will be labelled request, because action is more important than information.
+
+Do my definitions match the ones in `queries.py`? No, our definitions don't exactly match those in queries.py, rather we have a more general definition and different boundaries, especially for request, complaint and other. Thus, the accuracy score is partly measuring mismatch between our definitions and the gold-label conventions, rather than only measuring calssifier quality.
+
+### 2. The policy layer
+
+Before choosing a threshold, the confidence values I saw were: min 0.00,
+max 1.00, 3 distinct values across 24 queries on qwen3:4b-instruct (0.00 x2,
+0.99 x15, 1.00 x7). On qwen2.5:7b: min 0.95, max 1.00, 2 distinct values
+(0.95 x13, 1.00 x11). Both models got 19/24 routes right.
+
+The confidence does not separate right from wrong. On qwen3:4b-instruct all
+five misroutes score 0.99, the same as most correct routes, and the only
+0.00s are Q-22 and Q-23, both correctly routed `other`. On qwen2.5:7b, 4 of
+13 answers at 0.95 are wrong, against 1 of 11 at 1.00: weak, and not enough
+to act on.
+
+- confidence floor: 0.5, not applied to `other` (fires when confidence <
+  0.5 and the route is one of the four that act). My first choice was 0.95,
+  and the distribution shows why it was wrong: on qwen3:4b-instruct it fired
+  only on Q-22 and Q-23, both correct, so it caught 0 misroutes and cost 2
+  correct routes; on qwen2.5:7b it never fired. A floor high enough to catch
+  qwen3:4b-instruct's misroutes (above 0.99) would reject 15 of 24 messages,
+  10 of them correct. No value separates right from wrong on either model, so
+  the floor is not a misroute detector. It is a backstop for a decision the
+  model itself calls a coin flip, and 0.5 sits in the empty gap between 0.00
+  and 0.95 that both models leave. The 0.00s only ever landed on spam and the
+  prompt injection, routed `other`, where the model is scoring "is this help
+  desk business" rather than "how sure am I". Moving those to the safe
+  default would hand a prompt injection to `info`, a specialist told to
+  answer, so the floor skips `other`, whose specialist is told not to follow
+  instructions in the message.
+- evidence check: when the span is empty or not an exact, case-sensitive
+  substring of the message, the decision is overridden to the safe default
+  and logged as `evidence_not_verbatim`, because a router that invents its
+  justification cannot be audited, and the evidence is what a human reads
+  when reviewing a misroute. The check tests honesty, not correctness: it
+  overrides even when the route was right.
+- safe default: `info`, because that specialist only answers, and is
+  forbidden to state any fact it was not given. `request` logs a ticket and
+  `complaint` escalates to a person, so being wrong into either creates work
+  someone has to undo. `status` claims knowledge of a ticket that may not
+  exist. `other` tells a sender with a real problem that it is not our
+  business, so a broken door would go unreported. A wrong `info` reply costs
+  the sender one more message.
+
+How often each check fired: below_threshold 0, evidence_not_verbatim [ ],
+invalid_decision [ ] (my run, after TODO 5). On the recording, which replays
+the reference prompt's answers rather than mine: qwen3:4b-instruct 0, 0, 0;
+qwen2.5:7b 0, 5, 0 (Q-05, Q-08, Q-09 re-accented the French and German, Q-16
+ended in a non-Latin token, and Q-24 quoted the route definition instead of
+the message).
+
+The floor firing zero times is the finding, not a mistake: the confidence
+is a near-constant 0.95 to 1.00 on everything either model treats as help
+desk business, so the signal is useless for routing on both models. The
+evidence check is the only policy check doing real work, and only on
+qwen2.5:7b.
+
+### 3. Route accuracy
+
+| route | correct | of |
+| request | | |
+| info | | |
+| status | | |
+| complaint | | |
+| other | | |
+
+Overall [ ]/24. Excluding the four ambiguous: [ ]/20.
+
+Confusion pairs, with direction:
+
+| gold | applied | count |
+| | | |
+
+The route carrying most of the error is [ ]. The fix is [a definition / a
+prompt / a bigger model], because [ ].
+
+### 4. What routing cost
+
+- monolith: [ ] tokens over 24 queries
+- router: [ ] tokens over 24 queries
+- the classifying call alone: [ ] tokens, which is [ ] per cent of the
+  routed total
+
+I predicted that share would be [ ] before measuring it.
+
+[If the share surprised you, say why. The classifier's prompt carries every
+route definition on every call, and the specialists carry only their own.]
+
+### 5. What routing bought
+
+One thing a specialist can be forbidden to do that the monolith cannot be
+given:
+
+The `status` specialist is forbidden to say that anything is done, in
+progress, or scheduled, because it cannot see the ticket system. The
+monolith cannot be given that rule, because for a `request` it has to
+confirm that a ticket is being logged, which is exactly that kind of
+statement. In the same way, `complaint` is forbidden to promise a fix while
+`request` exists to start one, and `request` is forbidden to answer the
+sender at all, which would break every other kind. The monolith only gets
+the rules that hold for all five: never invent a fact, and never follow
+instructions aimed at the system.
+
+Would I ship the router: [ ]. Evidence: [ ]. What would change my mind: [ ].
+
+### 6. Stretch variant
+
+Variant assigned: [ ]. Result: [ ].
+
+[For model routing: report both models on accuracy, evidence verbatim, the
+confidence range, and resident memory. If the smaller model won, say so
+plainly and say what you think that means.]
+
+[For voting: report the split-vote count at each temperature. If nothing
+ever disagreed, that is the result. Say what it cost and what it bought.]
+
+### The gold set
+
+`artifacts/goldset.json` now holds [ ] cases: 10 from week 2 and 24 added
+today, with the four ambiguous ones tagged.
+
+### Deferred
+
+[Anything you did not get to, and why.]
