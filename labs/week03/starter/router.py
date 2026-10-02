@@ -55,7 +55,36 @@ def classify(client, text: str, model: str = SMALL.name,
     what makes it cheap enough to be worth adding, and it is what makes its
     output inspectable.
     """
-    raise NotImplementedError("TODO 2: the classifying call")
+    t0 = time.perf_counter()
+    reply = client.chat.completions.create(
+        model=model,
+        temperature=temperature,
+        max_tokens=120,
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "decision",
+                "schema": Decision.model_json_schema(),
+            },
+        },
+        messages=[
+            {"role": "system", "content": SYSTEM_ROUTER},
+            {"role": "user", "content": text},
+        ],
+    )
+    raw = reply.choices[0].message.content
+    meta = {
+        "seconds": time.perf_counter() - t0,
+        "prompt_tokens": reply.usage.prompt_tokens,
+        "completion_tokens": reply.usage.completion_tokens,
+        "raw": raw,
+        "error": None,
+    }
+    try:
+        return Decision.model_validate_json(raw), meta
+    except ValidationError as exc:
+        meta["error"] = str(exc).splitlines()[0]
+        return None, meta
 
 
 # --------------------------------------------------------------------------
@@ -68,7 +97,20 @@ def classify(client, text: str, model: str = SMALL.name,
 # exercise exists to catch. Run the classifier over the twenty four queries
 # first, print the confidences, and then decide. On one of the two course
 # models the answer will surprise you.
-CONFIDENCE_FLOOR = None      # TODO 3a
+#
+# Measured over the 24 queries at temperature 0:
+#   SMALL  (qwen3:4b-instruct)  19/24. 0.99-1.00 on 22, and all 5 misroutes
+#          sit at 0.99. The two 0.00s are Q-22/Q-23, both correct `other`.
+#   LARGE  (qwen2.5:7b)         19/24. 0.95 on 13 (4 wrong), 1.00 on 11 (1 wrong).
+# The confidence carries almost no information about correctness on either model.
+#
+# So the floor cannot be a misroute detector, and no value can make it one: a
+# floor above 0.99 rejects 15 of 24 to catch 5. It is a backstop for a model
+# that says it is guessing. 0.5 sits in the empty gap between 0.00 and 0.95
+# on both models. The 0.00s only ever land on `other` (spam, injection), where
+# the model is scoring "is this help desk business", so the floor skips
+# `other`: moving an injection to `info` hands it to a specialist that answers.
+CONFIDENCE_FLOOR = 0.5
 
 # TODO 3b. Where does anything the policy rejects go?
 #
@@ -76,7 +118,10 @@ CONFIDENCE_FLOOR = None      # TODO 3a
 # DOES on the sender's behalf, and pick the one whose actions are easiest to
 # undo. One of the five logs a ticket, one escalates to a human, and one
 # only answers. That should decide it.
-SAFE_DEFAULT = None          # TODO 3b
+# `request` logs a ticket and `complaint` escalates to a human, both of which
+# create work someone has to undo. `info` only answers, and is forbidden to
+# invent facts, so a wrong `info` reply costs the sender one more message.
+SAFE_DEFAULT = "info"
 
 
 def apply_policy(decision: Decision | None, text: str) -> Routed:
@@ -102,7 +147,24 @@ def apply_policy(decision: Decision | None, text: str) -> Routed:
     it None when the decision stood. You will count these at the checkpoint,
     and "the policy fired sometimes" is not a count.
     """
-    raise NotImplementedError("TODO 3: the policy layer")
+    if decision is None:
+        placeholder = Decision(route=SAFE_DEFAULT, confidence=0.0, evidence="")
+        return Routed(decision=placeholder, applied_route=SAFE_DEFAULT,
+                      policy_fired="invalid_decision", evidence_ok=False)
+
+    # Plain substring search. An empty span is trivially "in" any text, so
+    # it does not count as evidence.
+    span = decision.evidence.strip()
+    evidence_ok = bool(span) and span in text
+    if not evidence_ok:
+        return Routed(decision=decision, applied_route=SAFE_DEFAULT,
+                      policy_fired="evidence_not_verbatim", evidence_ok=False)
+
+    if decision.confidence < CONFIDENCE_FLOOR and decision.route != "other":
+        return Routed(decision=decision, applied_route=SAFE_DEFAULT,
+                      policy_fired="below_threshold", evidence_ok=True)
+
+    return Routed(decision=decision, applied_route=decision.route)
 
 
 # --------------------------------------------------------------------------
