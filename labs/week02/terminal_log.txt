@@ -1,0 +1,108 @@
+(.venv)  ✘ dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week02/starter   week_1_2_rerun  python 01_zero_shot.py --replay
+replay: 60 recordings, model qwen3:4b-instruct, recorded 2026-08-10. Deliberate failures: zero-shot invents due dates on messages that state none, zero-shot confuses facilities with access on REQ-04, the quote field gets worse under few-shot if examples show tidied quotes
+
+  note: your prompt differs from the one this fixture was recorded with, so replay is returning
+        the reference prompt's answer for each input. That is fine for developing a scorer or a
+        policy layer. It is not a measurement of your prompt: run without --replay for that.
+zero-shot: category  9/10  urgency 10/10  due_date  7/10  quote 10/10   invalid 0
+  4618 tokens, 0.0s over 10 documents
+
+failures worth reading:
+  REQ-01  due_date  got '2026-09-15', expected None
+  REQ-05  due_date  got '2026-09-15', expected None
+  REQ-08  category  got 'access', expected 'hardware'
+  REQ-10  due_date  got '2026-09-30', expected None
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week02/starter   week_1_2_rerun ±  python 01_zero_shot.py 
+zero-shot: category  9/10  urgency  9/10  due_date  7/10  quote  8/10   invalid 0
+  4103 tokens, 73.2s over 10 documents
+
+failures worth reading:
+  REQ-01  due_date  got '2023-10-09', expected None
+  REQ-01  quote     quote is not an exact source substring
+  REQ-03  urgency   got 'info', expected 'standard'
+  REQ-04  quote     quote is not an exact source substring
+  REQ-08  due_date  got '2024-04-15', expected None
+  REQ-09  category  got 'facilities', expected 'other'
+  REQ-10  due_date  got '2023-12-31', expected None
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week02/starter   week_1_2_rerun ±  python 02_few_shot.py --replay
+replay: 60 recordings, model qwen3:4b-instruct, recorded 2026-08-10. Deliberate failures: zero-shot invents due dates on messages that state none, zero-shot confuses facilities with access on REQ-04, the quote field gets worse under few-shot if examples show tidied quotes
+
+  note: your prompt differs from the one this fixture was recorded with, so replay is returning
+        the reference prompt's answer for each input. That is fine for developing a scorer or a
+        policy layer. It is not a measurement of your prompt: run without --replay for that.
+zero-shot: category  9/10  urgency 10/10  due_date  7/10  quote 10/10   invalid 0
+  4618 tokens, 0.0s over 10 documents
+
+few-shot: category  9/10  urgency 10/10  due_date  7/10  quote 10/10   invalid 0
+  4618 tokens, 0.0s over 10 documents
+
+field         zero-shot     few-shot    move
+--------------------------------------------
+category           9/10         9/10      +0
+urgency           10/10        10/10      +0
+due_date           7/10         7/10      +0
+quote             10/10        10/10      +0
+invalid               0            0
+
+example block costs 0 input tokens per call, 0 per thousand calls
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week02/starter   week_1_2_rerun ±  python 02_few_shot.py
+zero-shot: category  9/10  urgency  9/10  due_date  7/10  quote  8/10   invalid 0
+  4103 tokens, 54.8s over 10 documents
+
+few-shot: category  9/10  urgency 10/10  due_date  9/10  quote  9/10   invalid 0
+  7455 tokens, 55.9s over 10 documents
+
+field         zero-shot     few-shot    move
+--------------------------------------------
+category           9/10         9/10      +0
+urgency            9/10        10/10      +1
+due_date           7/10         9/10      +2
+quote              8/10         9/10      +1
+invalid               0            0
+
+example block costs 350 input tokens per call, 350000 per thousand calls
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week02/starter   week_1_2_rerun ±   python 03_sensitivity.py --variant role --replay
+replay: 60 recordings, model qwen3:4b-instruct, recorded 2026-08-10. Deliberate failures: zero-shot invents due dates on messages that state none, zero-shot confuses facilities with access on REQ-04, the quote field gets worse under few-shot if examples show tidied quotes
+
+  note: your prompt differs from the one this fixture was recorded with, so replay is returning
+        the reference prompt's answer for each input. That is fine for developing a scorer or a
+        policy layer. It is not a measurement of your prompt: run without --replay for that.
+baseline: category  9/10  urgency 10/10  due_date  7/10  quote 10/10   invalid 0
+  4618 tokens, 0.0s over 10 documents
+
+role: category  9/10  urgency 10/10  due_date  7/10  quote 10/10   invalid 0
+  4618 tokens, 0.0s over 10 documents
+
+field          baseline         role    move
+--------------------------------------------
+category           9/10         9/10      +0
+urgency           10/10        10/10      +0
+due_date           7/10         7/10      +0
+quote             10/10        10/10      +0
+invalid               0            0
+  en: 5 documents   baseline field errors 2   role field errors 2
+  fr: 3 documents   baseline field errors 2   role field errors 2
+  de: 2 documents   baseline field errors 0   role field errors 0
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week02/starter   week_1_2_rerun ±  python 03_sensitivity.py --variant english_only
+baseline: category  9/10  urgency 10/10  due_date  9/10  quote  9/10   invalid 0
+  7455 tokens, 49.6s over 10 documents
+
+english_only: category 10/10  urgency 10/10  due_date  7/10  quote  8/10   invalid 0
+  7196 tokens, 72.2s over 10 documents
+
+field          baseline english_only    move
+--------------------------------------------
+category           9/10        10/10      +1
+urgency           10/10        10/10      +0
+due_date           9/10         7/10      -2
+quote              9/10         8/10      -1
+invalid               0            0
+  en: 5 documents   baseline field errors 3   english_only field errors 4
+  fr: 3 documents   baseline field errors 0   english_only field errors 1
+  de: 2 documents   baseline field errors 0   english_only field errors 0
+

@@ -1,0 +1,15 @@
+{
+  "variant": "english_only",
+  "baseline_hits": {
+    "category": 9,
+    "urgency": 10,
+    "due_date": 9,
+    "quote": 9
+  },
+  "variant_hits": {
+    "category": 10,
+    "urgency": 10,
+    "due_date": 7,
+    "quote": 8
+  }
+}

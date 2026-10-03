@@ -2,9 +2,9 @@
   "zero_shot": {
     "hits": {
       "category": 9,
-      "urgency": 10,
+      "urgency": 9,
       "due_date": 7,
-      "quote": 10
+      "quote": 8
     },
     "invalid": 0
   },
@@ -12,10 +12,10 @@
     "hits": {
       "category": 9,
       "urgency": 10,
-      "due_date": 7,
-      "quote": 10
+      "due_date": 9,
+      "quote": 9
     },
     "invalid": 0
   },
-  "extra_input_tokens_per_call": 0.0
+  "extra_input_tokens_per_call": 350.0
 }
