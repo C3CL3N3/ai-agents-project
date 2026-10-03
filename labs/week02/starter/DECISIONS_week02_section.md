@@ -108,6 +108,4 @@ category, urgency, and due date, not a gold quote span.
 ### Deferred
 
 The non-replay `role`, `reordered`, and `no_delimiter` sensitivity variants
-were not run in the supplied log. The `role` replay run showed no movement,
-but replay is not a live measurement because the fixture uses its reference
-answers.
+were not run on this machine.
