@@ -1,0 +1,50 @@
+
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week01/starter   week_1_2_rerun ±  python 01_first_call.py 
+
+--- TODO 2: print the four things here ---
+
+Answer: To register a change of address, visit your local government website or contact your municipal office to obtain the necessary forms. Complete the form with your new address and submit it in person or by mail, depending on your location.
+Finish reason: stop
+Prompt tokens: 24, Completion tokens: 45
+Elapsed time: 3.24730416400007
+0.04 EUR per thousand calls on the small tier (24 in, 45 out per call), price list of 2026-08-10. Estimate, not a measurement.
+
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week01/starter   week_1_2_rerun ±   python 02_variance.py --replay 
+Recording: qwen3:4b-instruct on Apple M4, 16 GB, Ollama, one request at a time, 2026-08-10
+
+cell                       distinct   chars   median s
+------------------------------------------------------
+closed_short|t00               1/12      10       0.17
+closed_short|t10               1/12      10       0.17
+open_list|t00                  1/12     189       1.10
+open_list|t10                 11/12     178       1.14
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week01/starter   week_1_2_rerun ±  python 02_variance.py
+cell                       distinct   chars   median s
+------------------------------------------------------
+closed_short|t00               1/6      10       0.22
+closed_short|t10               1/6      10       0.20
+open_list|t00                  1/6     199       2.69
+open_list|t10                  6/6     179       2.
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week01/starter   week_1_2_rerun ±  python 02_variance.py --full  
+cell                       distinct   chars   median s
+------------------------------------------------------
+closed_short|t00               1/6      10       0.22
+closed_short|t10               1/6      10       0.20
+open_list|t00                  1/6     199       2.71
+open_list|t10                  6/6     189       2.52
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week01/starter   week_1_2_rerun ±  python 03_cost.py
+short    0.80s  in   20 out    3
+long    13.70s  in   38 out  200
+
+The long answer took 17 times as long as the short one.
+Compare that with the ratio of their output tokens.
+
+cold start   7.99s  in   20 out    3
+warm start   0.19s  in   20 out    3
+ratio cold/warm = 41.39x
+Run locally, so the monetary cost was zero. The costs that are real here are latency, resident memory, and the model size a student has to be able to run. The euro figures in this report are estimates against the 2026-08-10 price list.

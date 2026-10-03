@@ -3,28 +3,28 @@
     {
       "case": "short",
       "model": "qwen3:4b-instruct",
-      "seconds": 1.802,
+      "seconds": 0.799,
       "prompt_tokens": 20,
       "completion_tokens": 3
     },
     {
       "case": "long",
       "model": "qwen3:4b-instruct",
-      "seconds": 4.974,
+      "seconds": 13.7,
       "prompt_tokens": 38,
       "completion_tokens": 200
     },
     {
       "case": "cold start",
       "model": "qwen3:4b-instruct",
-      "seconds": 1.286,
+      "seconds": 7.994,
       "prompt_tokens": 20,
       "completion_tokens": 3
     },
     {
       "case": "warm start",
       "model": "qwen3:4b-instruct",
-      "seconds": 0.09,
+      "seconds": 0.193,
       "prompt_tokens": 20,
       "completion_tokens": 3
     }
