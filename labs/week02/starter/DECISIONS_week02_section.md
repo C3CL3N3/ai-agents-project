@@ -7,7 +7,7 @@ Copy this into your `DECISIONS.md` and fill it in.
 ## Week 2
 
 **Run conditions.** model: qwen3:4b-instruct | temperature: 0.0 |
-prompt version: `week02-zero-shot-v1` | served locally | date: 2026-08-10 |
+prompt version: `week02-zero-shot-v1` | served locally | date: 2026-10-03 |
 scored on: my own machine (replay results are identified separately)
 
 ### 1. The output contract
