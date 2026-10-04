@@ -67,7 +67,39 @@ def score_routes(results, queries) -> RouteScore:
     wrong, whether the evidence was verbatim, which policy check fired, the
     confidence value, and whether the query was one of the ambiguous four.
     """
-    raise NotImplementedError("TODO 5: score the routes")
+    if len(results) != len(queries):
+        raise ValueError(
+            f"results and queries must have the same length, got "
+            f"{len(results)} and {len(queries)}"
+        )
+
+    score = RouteScore()
+
+    for routed, query in zip(results, queries):
+        gold_route = query.route
+        applied_route = routed.applied_route
+
+        hit, count = score.per_route.setdefault(gold_route, [0, 0])
+        score.per_route[gold_route] = [hit + (applied_route == gold_route),
+                                       count + 1]
+        score.total += 1
+
+        if applied_route != gold_route:
+            score.confusion[(gold_route, applied_route)] += 1
+
+        if routed.evidence_ok:
+            score.evidence_ok += 1
+        if routed.policy_fired:
+            score.policy_fired[routed.policy_fired] += 1
+        if routed.decision is not None:
+            score.confidences.append(routed.decision.confidence)
+
+        if query.ambiguous:
+            score.ambiguous_total += 1
+            if applied_route == gold_route:
+                score.ambiguous_hits += 1
+
+    return score
 
 
 # --------------------------------------------------------------------------

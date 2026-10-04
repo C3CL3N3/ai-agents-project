@@ -94,6 +94,46 @@ def totals(*meta_lists):
     return tok, secs
 
 
+# TODO 6: grow the shared gold set with the Week 3 routing cases.
+def grow_gold_set() -> tuple[int, str]:
+    """Add the Week 3 routing cases to the shared gold set once."""
+    raw, source = load_or_reference("goldset.json", lab=LAB)
+    gold = GoldSet.model_validate(raw)
+    existing_ids = {case.case_id for case in gold.cases}
+
+    route_actions = {
+        "request": "logs and acts on the requested service",
+        "info": "provides the requested information",
+        "status": "looks up and reports the current status",
+        "complaint": "acknowledges and escalates the complaint",
+        "other": "redirects the message away from the help desk",
+    }
+    added = 0
+    for query in QUERIES:
+        if query.id in existing_ids:
+            continue
+        tags = [query.lang, query.route]
+        if query.ambiguous:
+            tags.append("ambiguous")
+        gold.cases.append(GoldCase(
+            case_id=query.id,
+            week_added=3,
+            question=query.text,
+            expected={"route": query.route},
+            expected_behavior=(
+                f"classifies the message as {query.route} and "
+                f"{route_actions[query.route]}"
+            ),
+            slice_tags=tags,
+        ))
+        added += 1
+
+    write_json("artifacts/goldset.json", gold)
+    print(f"gold set: {source} input, added {added} Week 3 cases, "
+          f"{len(gold.cases)} total")
+    return added, source
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--replay", action="store_true")
@@ -153,8 +193,9 @@ def main() -> int:
     #   understand best.
     #
     #   Skip any case_id already in the file, so this is safe to re-run.
+    grow_gold_set()
 
-    # TODO 7. Answer four questions in DECISIONS.md. The comparison is the
+    # TODO 7. The measured answers are recorded in DECISIONS.md. The comparison is the
     # deliverable, not the two running systems.
     #
     #   a. Name the confusion pairs and say which DIRECTION they point. If

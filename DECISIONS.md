@@ -1,13 +1,5 @@
 # Decisions
 
-# Week 1: the stack, the first call, and what it costs
-
-Copy this into your `DECISIONS.md` and fill it in. Keep the headings. In
-week 13 this becomes a section of your project report that you do not have
-to write.
-
----
-
 ## Week 1
 
 **Run conditions.** Everything below was produced on:
@@ -193,3 +185,111 @@ category, urgency, and due date, not a gold quote span.
 
 The non-replay `role`, `reordered`, and `no_delimiter` sensitivity variants
 were not run on this machine.
+
+## Week 3
+
+**Run conditions.** classifier and answering model: `qwen3:4b-instruct` |
+temperature: 0.0 | served locally with Ollama | date: 2026-10-04 |
+scored on: my own machine
+
+### 1. The five route definitions
+
+| route | what the help desk must do |
+| request | Log and act on a specific service or action the sender needs. |
+| info | Provide information about a service without carrying out a new action. |
+| status | Look up and report the current state of something already reported. |
+| complaint | Acknowledge dissatisfaction with the service or its handling and escalate it. |
+| other | Redirect messages that are not help desk business. |
+
+For the four ambiguous queries, I kept the convention from `queries.py`.
+A complaint takes priority when a message reports a problem and complains
+about how it was handled. A plain follow-up is `status`, and a question about
+a procedure combined with a fault is `request`.
+
+My definitions match the labels in `queries.py`. That means the score
+measures the classifier against the same convention used to create the
+labels.
+
+### 2. The policy layer
+
+The confidence values ranged from 0.00 to 1.00, with 3 distinct values
+across the 24 queries. I used a confidence floor of 0.5. It catches a model
+that explicitly says it is unsure, but it is not a reliable misroute
+detector because most confidence values were high.
+
+I rejected any evidence span that was empty or not copied exactly from the
+message. This keeps the routing decision auditable. I used `info` as the safe
+default because that specialist only answers and is forbidden to invent
+facts; sending an uncertain message there is easier to undo than logging a
+ticket or escalating a complaint.
+
+The policy fired once for `evidence_not_verbatim`. It did not fire for
+`below_threshold` or `invalid_decision`. The classifier produced valid
+decisions for all 24 live queries, and the one evidence failure was caught
+before the response call.
+
+### 3. Route accuracy
+
+| route | correct | of |
+| request | 7 | 7 |
+| info | 2 | 5 |
+| status | 4 | 4 |
+| complaint | 4 | 4 |
+| other | 1 | 4 |
+
+Overall, the router got 18/24 cases. Excluding the four ambiguous cases, it
+got 14/20.
+
+| gold | applied | count |
+| info | request | 3 |
+| other | info | 2 |
+| other | request | 1 |
+
+The `info` route carries most of the errors. The first fix I would try is a
+clearer boundary between asking for information and asking the help desk to
+perform an action. I would measure that definition change before choosing a
+bigger model.
+
+### 4. What routing cost
+
+- monolith: 10,984 tokens over 24 queries
+- router: 13,602 tokens over 24 queries
+- classifier: 8,924 tokens, or 66% of the routed total
+
+I expected the classifier to be a noticeable part of the routed cost because
+it repeats all five route definitions on every call. The 66% share was large:
+the router used 2,618 more tokens than the monolith, so the extra call needs
+to justify itself through safer specialist behavior rather than lower cost.
+
+### 5. What routing bought
+
+The status specialist can be forbidden from claiming that a ticket is
+completed, scheduled, or assigned because it cannot see the ticket system.
+The complaint specialist can be forbidden from promising a fix or a date.
+Those restrictions are specific to each route. Putting both into the
+monolith would either constrain messages that are not status chases or
+complaints, or require the general prompt to reproduce all of the same
+conditional rules.
+
+I would not ship the router yet based on this 24-case run. It reached 18/24
+and added 2,618 tokens compared with the monolith. I would reconsider after
+a larger held-out set showed that the specialist restrictions prevent real
+failures, or after a revised definition reduces the `info` confusions without
+hurting the other routes.
+
+### 6. Stretch variant
+
+I deferred the stretch variant. The live monolith/router comparison and the
+gold-set handoff were the priority for this run.
+
+### The gold set
+
+`artifacts/goldset.json` now holds 34 cases: 10 from Week 2 and 24 added in
+Week 3. The four ambiguous routing cases are tagged `ambiguous`.
+
+### Deferred
+
+The replay comparison was useful for checking the scorer, but it was not a
+measurement of this prompt because the fixture was recorded with a different
+system prompt and all classifier responses failed validation. The numbers
+above come from the live run. The stretch variant remains to be done.
