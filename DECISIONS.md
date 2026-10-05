@@ -279,16 +279,11 @@ hurting the other routes.
 
 ### 6. Stretch variant
 
-I implemented both stretch variants in `labs/week03/starter/02_stretch.py`.
-The model variant runs the same classifier and policy over all 24 queries
-with both models and reports route accuracy (including and excluding the
-ambiguous cases), verbatim evidence, confidence range and distinct values,
-and resident memory. The voting variant runs three sequential samples at
-temperature 0.7, scores the majority result, and reports split-vote query
-ids next to the ambiguous query ids. Replay validation found no split votes,
-but its classifier responses are deliberately invalid for the current
-prompt, so those replay scores are not a live measurement. A live run is
-still required before treating the stretch numbers as results.
+Replay was not a measurement of this prompt because the fixture used a different prompt. `SMALL` scored 5/24 and `LARGE` 17/24, but all `SMALL` replay responses failed validation, so these results are useful only for scorer and policy development.
+
+Live model routing tied overall: `SMALL` and `LARGE` both scored 17/24. Excluding the four ambiguous cases, `SMALL` scored 13/20 and `LARGE` 14/20. Both returned verbatim evidence on 22/24 queries. `SMALL` used 3.9 GB and reported confidence values from 0.00 to 1.00 with 3 distinct values; `LARGE` used 5.0 GB and reported 0.95 to 1.00 with 2 distinct values. The larger model provided no overall advantage and used more memory.
+
+Live voting scored 18/24 overall, 14/20 excluding ambiguous cases, and returned verbatim evidence on 23/24 queries. There were no split votes, so it provided no disagreement signal while costing three classifier calls per query. I would not use voting.
 
 ### The gold set
 
@@ -300,4 +295,4 @@ Week 3. The four ambiguous routing cases are tagged `ambiguous`.
 The replay comparison was useful for checking the scorer, but it was not a
 measurement of this prompt because the fixture was recorded with a different
 system prompt and all classifier responses failed validation. The numbers
-above come from the live run. The stretch variant remains to be done.
+above come from the live run.
