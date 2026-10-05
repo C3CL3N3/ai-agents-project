@@ -84,7 +84,7 @@ The policy layer is three lines of code and three design decisions:
   in the message? This tests the classifier's honesty rather than its
   correctness, and both matter.
 - **The safe default.** Where does anything the policy rejects go? Ask what
-  each specialist *does* on the sender's behalf, and pick the one whose
+  each specialist _does_ on the sender's behalf, and pick the one whose
   actions are easiest to undo.
 
 **Checkpoint 1.** The six items in `checklist.md`.

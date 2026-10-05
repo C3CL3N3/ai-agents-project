@@ -279,8 +279,16 @@ hurting the other routes.
 
 ### 6. Stretch variant
 
-I deferred the stretch variant. The live monolith/router comparison and the
-gold-set handoff were the priority for this run.
+I implemented both stretch variants in `labs/week03/starter/02_stretch.py`.
+The model variant runs the same classifier and policy over all 24 queries
+with both models and reports route accuracy (including and excluding the
+ambiguous cases), verbatim evidence, confidence range and distinct values,
+and resident memory. The voting variant runs three sequential samples at
+temperature 0.7, scores the majority result, and reports split-vote query
+ids next to the ambiguous query ids. Replay validation found no split votes,
+but its classifier responses are deliberately invalid for the current
+prompt, so those replay scores are not a live measurement. A live run is
+still required before treating the stretch numbers as results.
 
 ### The gold set
 

@@ -1,0 +1,71 @@
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week03/starter   main ±  python 02_stretch.py --variant model --replay
+replay: 264 recordings, model qwen3:4b-instruct and qwen2.5:7b, recorded 2026-08-10. Deliberate failures: the small model sends 2 requests and 2 others into info, the large model paraphrases the evidence span 4 times in 24, the large model reports only two distinct confidence values, both above 0.95, so no threshold can do useful work on it, three votes at temperature 0.7 and 1.0 never disagree at all, so voting costs three times as much and changes nothing
+
+prediction: SMALL will win because the routing task rewards following a narrow classification instruction closely.
+
+  note: your prompt differs from the one this fixture was recorded with, so replay is returning
+        the reference prompt's answer for each input. That is fine for developing a scorer or a
+        policy layer. It is not a measurement of your prompt: run without --replay for that.
+qwen3:4b-instruct (resident memory: 3.9 GB)
+model routing: 5/24 routed correctly
+  excluding the ambiguous four: 5/20
+  per route: complaint 0/4  info 5/5  other 0/4  request 0/7  status 0/4
+  evidence verbatim: 0/24
+  confidence: min 0.00 max 0.00 distinct 1
+  policy fired: invalid_decision 24
+  confusion pairs, gold to applied:
+    request    -> info       7
+    status     -> info       4
+    complaint  -> info       4
+    other      -> info       4
+
+qwen2.5:7b (resident memory: 5.0 GB)
+model routing: 17/24 routed correctly
+  excluding the ambiguous four: 16/20
+  per route: complaint 2/4  info 4/5  other 2/4  request 5/7  status 4/4
+  evidence verbatim: 19/24
+  confidence: min 0.95 max 1.00 distinct 2
+  policy fired: evidence_not_verbatim 5
+  confusion pairs, gold to applied:
+    request    -> info       2
+    info       -> request    1
+    complaint  -> info       1
+    complaint  -> request    1
+    other      -> info       1
+    other      -> complaint  1
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week03/starter   main ±  python 02_stretch.py --variant voting --replay
+replay: 264 recordings, model qwen3:4b-instruct and qwen2.5:7b, recorded 2026-08-10. Deliberate failures: the small model sends 2 requests and 2 others into info, the large model paraphrases the evidence span 4 times in 24, the large model reports only two distinct confidence values, both above 0.95, so no threshold can do useful work on it, three votes at temperature 0.7 and 1.0 never disagree at all, so voting costs three times as much and changes nothing
+
+  note: your prompt differs from the one this fixture was recorded with, so replay is returning
+        the reference prompt's answer for each input. That is fine for developing a scorer or a
+        policy layer. It is not a measurement of your prompt: run without --replay for that.
+voting k=3, temperature=0.7
+majority result: 5/24 routed correctly
+  excluding the ambiguous four: 5/20
+  per route: complaint 0/4  info 5/5  other 0/4  request 0/7  status 0/4
+  evidence verbatim: 0/24
+  confidence: min 0.00 max 0.00 distinct 1
+  policy fired: invalid_decision 24
+  confusion pairs, gold to applied:
+    request    -> info       7
+    status     -> info       4
+    complaint  -> info       4
+    other      -> info       4
+disagreeing queries: []
+ambiguous queries: ['Q-13', 'Q-16', 'Q-18', 'Q-24']
+
+(.venv)  dbatista@Daniel-Zenbook  ~/bics/GenAI/group/ai-agents-project/labs/week03/starter   main ±  python 02_stretch.py --variant voting        
+voting k=3, temperature=0.7
+majority result: 18/24 routed correctly
+  excluding the ambiguous four: 14/20
+  per route: complaint 4/4  info 2/5  other 1/4  request 7/7  status 4/4
+  evidence verbatim: 23/24
+  confidence: min 0.00 max 1.00 distinct 4
+  policy fired: evidence_not_verbatim 1
+  confusion pairs, gold to applied:
+    info       -> request    3
+    other      -> info       2
+    other      -> request    1
+disagreeing queries: []
+ambiguous queries: ['Q-13', 'Q-16', 'Q-18', 'Q-24']
