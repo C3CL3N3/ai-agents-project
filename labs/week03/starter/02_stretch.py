@@ -51,7 +51,19 @@ def variant_model(client) -> None:
     tells you something about your threshold from TODO 3a that you cannot
     unsee.
     """
-    raise NotImplementedError("TODO 8: variant A, model routing")
+    print("prediction: SMALL will win because the routing task rewards "
+          "following a narrow classification instruction closely.\n")
+
+    for spec in (SMALL, LARGE):
+        results = []
+        for query in QUERIES:
+            decision, _ = classify(client, query.text, spec.name)
+            results.append(apply_policy(decision, query.text))
+
+        scored = score_routes(results, QUERIES)
+        print(f"{spec.name} (resident memory: {spec.resident_gb:.1f} GB)")
+        print(report(scored, "model routing"))
+        print()
 
 
 def variant_voting(client, k: int = 3) -> None:
@@ -69,7 +81,37 @@ def variant_voting(client, k: int = 3) -> None:
     that was already the cheap one, so as a way to decide it is a poor buy.
     As a way to detect something, it may be a very good one.
     """
-    raise NotImplementedError("TODO 8: variant B, voting")
+    if k < 1:
+        raise ValueError(f"k must be at least 1, got {k}")
+
+    results = []
+    disagreeing_ids = []
+    for query in QUERIES:
+        votes = []
+        for _ in range(k):
+            decision, _ = classify(client, query.text, temperature=0.7)
+            votes.append(decision)
+
+        routes = [vote.route for vote in votes if vote is not None]
+        if len(set(routes)) > 1:
+            disagreeing_ids.append(query.id)
+
+        if routes:
+            winner = collections.Counter(routes).most_common(1)[0][0]
+            majority = next(
+                vote for vote in votes
+                if vote is not None and vote.route == winner
+            )
+        else:
+            majority = None
+        results.append(apply_policy(majority, query.text))
+
+    scored = score_routes(results, QUERIES)
+    ambiguous_ids = [query.id for query in QUERIES if query.ambiguous]
+    print(f"voting k={k}, temperature=0.7")
+    print(report(scored, "majority result"))
+    print(f"disagreeing queries: {disagreeing_ids}")
+    print(f"ambiguous queries: {ambiguous_ids}")
 
 
 def main() -> int:
