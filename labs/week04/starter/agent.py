@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from handbook import INJECTION_MARKER
 from tools import SCHEMAS as ANTHROPIC_SCHEMAS
@@ -46,7 +46,14 @@ def to_openai_schema(schema: dict[str, Any]) -> dict[str, Any]:
     tools.py calls it "input_schema". Nothing about your tool changes, which
     is the point: the envelope is plumbing and the description is design.
     """
-    raise NotImplementedError("TODO 1: convert the schema envelope")
+    return {
+        "type": "function",
+        "function": {
+            "name": schema["name"],
+            "description": schema["description"],
+            "parameters": schema["input_schema"],
+        },
+    }
 
 
 SCHEMAS = [to_openai_schema(s) for s in ANTHROPIC_SCHEMAS]
@@ -138,7 +145,27 @@ def run_tool_call(name: str, raw_arguments: str) -> tuple[Any, bool]:
     paste it into its answer, and you have just told whoever asked the
     question what your directory layout is.
     """
-    raise NotImplementedError("TODO 5: validate, execute, catch, cap")
+    try:
+        arguments = json.loads(raw_arguments)
+    except (TypeError, json.JSONDecodeError):
+        return "Tool error: arguments were not valid JSON.", True
+
+    if not isinstance(arguments, dict):
+        return "Tool error: arguments must be a JSON object.", True
+
+    tool = DISPATCH.get(name)
+    if tool is None:
+        return f"Tool error: unknown tool '{name}'.", True
+
+    try:
+        result = tool(**arguments)
+    except Exception:
+        return "Tool error: the tool could not process those arguments.", True
+
+    encoded = json.dumps(result, ensure_ascii=False, default=str)
+    if len(encoded) > MAX_RESULT_CHARS:
+        encoded = encoded[:MAX_RESULT_CHARS]
+    return encoded, False
 
 
 # --------------------------------------------------------------------------
@@ -186,7 +213,110 @@ def run_task(client, task, model: str = LARGE.name,
     depends on a model's judgment, which is not a property you can promise
     anybody.
     """
-    raise NotImplementedError("TODO 2, 3, 4: the loop and its caps")
+    # TODO 2: model/tool loop. Stop when the model answers; otherwise execute
+    # each requested tool and send its result back with the matching call ID.
+    # TODO 3: step cap. A capped run must return a non-empty partial answer.
+    # TODO 4: no-progress cap. Count consecutive searches with no new doc IDs.
+    run = Run(task_id=task.id)
+    recorder = TraceRecorder(
+        week=week,
+        case_id=task.id,
+        conditions=local_conditions(
+            model, temperature=0.0, max_steps=max_steps,
+            stall_limit=stall_limit,
+        ),
+        user_input=task.question,
+    )
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": task.question},
+    ]
+    seen_doc_ids: set[str] = set()
+    stall_count = 0
+    started = time.perf_counter()
+
+    def finish(outcome: Literal["ok", "degraded"] = "ok") -> Run:
+        run.seconds = time.perf_counter() - started
+        recorder.finish(
+            output=run.answer,
+            outcome=outcome,
+            cap_fired=run.cap_fired,
+            tool_calls=run.tool_calls,
+            tool_errors=run.tool_errors,
+        )
+        return run
+
+    while run.steps < max_steps:  # TODO 3: enforce the step cap
+        with recorder.step("model", model) as trace_step:
+            reply = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                tools=SCHEMAS,
+                temperature=0.0,
+                max_tokens=400,
+            )
+            usage = getattr(reply, "usage", None)
+            prompt_tokens = getattr(usage, "prompt_tokens", None)
+            completion_tokens = getattr(usage, "completion_tokens", None)
+            trace_step.tokens(prompt_tokens, completion_tokens)
+            run.tokens += (prompt_tokens or 0) + (completion_tokens or 0)
+
+        run.steps += 1
+        message = reply.choices[0].message
+        tool_calls = message.tool_calls or []
+        if not tool_calls:
+            run.answer = message.content or ""
+            return finish()
+
+        assistant_message = {
+            "role": "assistant",
+            "content": message.content or "",
+            "tool_calls": [
+                call.model_dump() for call in tool_calls
+            ],
+        }
+        messages.append(assistant_message)
+
+        for call in tool_calls:
+            name = call.function.name
+            raw_arguments = call.function.arguments
+            run.tool_calls.append(name)
+
+            with recorder.step("tool", name) as trace_step:
+                result, errored = run_tool_call(name, raw_arguments)
+                if errored:
+                    run.tool_errors += 1
+                    trace_step.failed("tool execution failed")
+                trace_step.detail(arguments=raw_arguments, errored=errored)
+
+            result_text = result if isinstance(result, str) else json.dumps(
+                result, ensure_ascii=False, default=str)
+            if INJECTION_MARKER in result_text:
+                run.saw_injection = True
+
+            messages.append({
+                "role": "tool",
+                "tool_call_id": call.id,
+                "content": result_text,
+            })
+
+            # TODO 4: progress means discovering at least one new document.
+            doc_ids = _doc_ids(result_text)
+            new_doc_ids = doc_ids - seen_doc_ids
+            if new_doc_ids:
+                seen_doc_ids.update(new_doc_ids)
+                stall_count = 0
+            elif name == "search_services":
+                stall_count += 1
+
+            if stall_count >= stall_limit:
+                run.cap_fired = "no_progress"
+                run.answer = _partial(run, "no progress was detected")
+                return finish("degraded")
+
+    run.cap_fired = "step_limit"
+    run.answer = _partial(run, "the step limit was reached")
+    return finish("degraded")
 
 
 def _partial(run: Run, reason: str) -> str:

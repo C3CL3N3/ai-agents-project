@@ -3,3 +3,6 @@ venv/
 env/
 ENV/
 HowToWrite.md
+.gitignore
+.DS_Store
+skill.md

@@ -76,7 +76,7 @@ Estimates against the price list dated 2026-08-10, not measurements. The long ca
 
 I would run the small tier nightly because its estimated semester cost is low enough for repeated checks. I would run the large tier before a release when additional quality is worth the much higher cost. I would not use the large tier nightly because the recurring estimate is about 244.14 EUR versus 3.29 EUR for the small tier.
 
-### Deferred
+### Current stopping point
 
 /
 
@@ -181,7 +181,7 @@ exact substring, but it cannot determine whether that substring genuinely
 supports the urgency decision. The gold set also records the expected
 category, urgency, and due date, not a gold quote span.
 
-### Deferred
+### Remaining Week 4 sections
 
 The non-replay `role`, `reordered`, and `no_delimiter` sensitivity variants
 were not run on this machine.
@@ -296,3 +296,97 @@ The replay comparison was useful for checking the scorer, but it was not a
 measurement of this prompt because the fixture was recorded with a different
 system prompt and all classifier responses failed validation. The numbers
 above come from the live run.
+
+# Week 4: a ReAct loop with two tools
+
+## Week 4
+
+**Run conditions.** agent model: `qwen2.5:7b` | temperature: 0.0 | step cap:
+6 | budget: 6 model steps | stall limit: 2 | served locally through the
+replay fixture | date: 2026-10-08 | scored on: execution smoke tests, not yet
+the completed Week 4 scorer
+
+### 1. The two tool descriptions
+
+| tool | what its "do not use this for" clause prevents |
+|---|---|
+| `search_services` | Prevents using handbook search for arithmetic, translation, or individual ticket lookups. It also keeps the model from searching with a full sentence when the keyword index expects short keywords. |
+| `compute` | Prevents putting units, currency symbols, words, or variable names into the restricted arithmetic evaluator. It also prevents the model from doing retrieved-fee arithmetic in prose instead of producing a checkable calculation. |
+
+### 2. The three caps
+
+| cap | value | why that value |
+|---|---:|---|
+| steps | 6 model iterations | This is the starter's default limit. It bounds repeated tool calls while allowing a short multi-step task such as retrieval followed by calculation. |
+| budget | 6 model steps | The current implementation uses the step cap as its budget. A separate token budget has not been added yet, so this is a step budget rather than a measured token or euro budget. |
+| no progress | 2 consecutive searches | A search counts as progress when it returns at least one document ID that has not been seen in the run. Two consecutive searches with no new document IDs stop the run and return a partial answer. |
+
+My definition of progress is **discovery of a new handbook `doc_id`**. It does
+not fire when a second search returns an already-seen document, because a
+different query can still be useful and a repeated-document check is cheaper
+and more deterministic than asking another model to judge semantic progress.
+
+### 3. Execution verification before TODO 6
+
+The ten replay tasks all produced a non-empty answer during the TODO 2–4
+execution smoke test. This is not the Week 4 accuracy result yet: the
+deterministic scorer in `scoring.py` is still TODO 6.
+
+The caps were also tested directly:
+
+- A one-step run fired `step_limit` and returned a non-empty partial answer.
+- A synthetic client that repeated the same search fired `no_progress` after
+  three model iterations with a stall limit of two.
+- The normal T-01 replay completed without a cap after two model iterations.
+
+### Deferred
+
+TODO 5 is implemented and tested separately. TODO 6–8 remain: scoring,
+baseline comparison, injection findings, defense prompts, and the final
+Week 4 measurements should be added only after those runs are complete.
+
+### 4. What the tools bought
+
+No-tool baseline: [ ]/10. With tools: [ ]/10.
+
+One sentence on what the tools bought, and at what cost per task:
+
+[...]
+
+### 5. The four findings
+
+| finding | result |
+| tool abuse on T-08 | |
+| invention on T-10 | |
+| refusal with zero tool calls | |
+| notice board: text reached the model | |
+| notice board: agent followed it | |
+
+[Quote the invented answer if there was one. An invented figure with an
+invented citation is worse than one without, and it is worth having the exact
+words in front of you when you write entry 6.]
+
+### 6. Blast radius
+
+Prompt-level defenses tried: [ ] of 8 blocked the injection.
+
+Given that an attacker **can** make this agent say anything, the worst thing
+they can make it **do** is:
+
+[...]
+
+That answer depends on the fact that this agent's only tools are a read-only
+search and a calculator. It changes the moment the agent gains a tool that
+writes, sends, or pays, because [ ].
+
+What I would build first to bound that, and the week I expect to build it in:
+
+[...]
+
+[Week 12 will ask you to find this entry. Writing down a vulnerability you
+have found and not yet fixed, with the week you expect to fix it, is exactly
+what a security backlog is.]
+
+### Deferred
+
+[Anything you did not get to, and why.]
