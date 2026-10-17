@@ -15,8 +15,9 @@ scorer does nothing.
 from __future__ import annotations
 
 import argparse
+import time
 
-from agent import SYSTEM, run_task
+from agent import SYSTEM, Run, run_task
 from scoring import report, score_all
 from tasks import TASKS
 
@@ -26,6 +27,30 @@ from project.models import BASE_URL, API_KEY, LARGE
 from project.trace import write_json
 
 LAB = "week04_react_tool_use"
+
+# The baseline is the same question with no handbook and no tools, sent
+# exactly as make_fixture.py recorded it, so it replays.
+NO_TOOL_SYSTEM = (
+    "You answer questions for the help desk of Remerbaach, a Luxembourg "
+    "commune. You have no handbook and no tools. Answer in under eighty "
+    "words.")
+
+
+def run_no_tools(client, task, model: str) -> Run:
+    run = Run(task_id=task.id)
+    started = time.perf_counter()
+    reply = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "system", "content": NO_TOOL_SYSTEM},
+                  {"role": "user", "content": task.question}],
+        temperature=0.0, max_tokens=400)
+    usage = getattr(reply, "usage", None)
+    run.tokens = ((getattr(usage, "prompt_tokens", None) or 0)
+                  + (getattr(usage, "completion_tokens", None) or 0))
+    run.steps = 1
+    run.answer = reply.choices[0].message.content or ""
+    run.seconds = time.perf_counter() - started
+    return run
 
 
 def get_client(replay: bool):
@@ -48,8 +73,11 @@ def main() -> int:
 
     client = get_client(args.replay)
 
-    runs = [run_task(client, t, model=args.model, max_steps=args.max_steps)
-            for t in TASKS]
+    if args.no_tools:
+        runs = [run_no_tools(client, t, model=args.model) for t in TASKS]
+    else:
+        runs = [run_task(client, t, model=args.model,
+                         max_steps=args.max_steps) for t in TASKS]
     board = score_all(TASKS, runs)
     print(report(board, runs))
 
@@ -60,8 +88,11 @@ def main() -> int:
         print(f"  [{mark}] {task.id}  steps {run.steps}  "
               f"{run.seconds:5.1f}s  tools={run.tool_calls}")
 
-    write_json("artifacts/week04_agent.json", {
+    out = ("artifacts/week04_baseline.json" if args.no_tools
+           else "artifacts/week04_agent.json")
+    write_json(out, {
         "model": args.model, "max_steps": args.max_steps,
+        "tools": not args.no_tools,
         "passed": board.passed, "total": board.total,
         "failed": board.failed_ids,
         "tool_abuse": board.tool_abuse, "invented": board.invented,
