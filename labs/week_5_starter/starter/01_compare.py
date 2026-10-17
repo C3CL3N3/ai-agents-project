@@ -70,8 +70,28 @@ async def run_baseline(index: int) -> dict:
 async def run_planned(index: int, with_reviewer: bool) -> dict:
     work = Work.fresh()
     t0 = time.perf_counter()
-    out = await propose(work, TASK, use_plan=True)
+    arch = "C planner+reviewer" if with_reviewer else "B planner"
+    try:
+        out = await propose(work, TASK, use_plan=True)
+    except Exception as exc:                                  # noqa: BLE001
+        print(f"    {arch} run {index} raised {type(exc).__name__}")
+        out = {"fix": None, "plan_ok": None, "repaired": None,
+               "plan_problems": [f"raised {type(exc).__name__}"],
+               "tokens": 0}
     fix = out["fix"]
+
+    if fix is None:
+        # The plan was refused after one repair, or a model call raised.
+        row = {"architecture": arch, "green": run_tests(work).passed,
+               "plan_ok": out["plan_ok"], "repaired": out["repaired"],
+               "plan_problems": out["plan_problems"],
+               "applied": "refused: no valid plan", "verdict": None,
+               "verdict_reason": None, "fix": None,
+               "tokens": out["tokens"],
+               "seconds": round(time.perf_counter() - t0, 1)}
+        record(arch, index, "error", **row)
+        work.cleanup()
+        return row
 
     verdict = None
     if with_reviewer:
@@ -87,9 +107,9 @@ async def run_planned(index: int, with_reviewer: bool) -> dict:
         applied = apply_fix(work, fix.path, fix.old_line, fix.new_line)
     green = run_tests(work).passed
 
-    row = {"architecture": "C planner+reviewer" if with_reviewer
-           else "B planner", "green": green,
-           "plan_ok": out["plan_ok"], "plan_problems": out["plan_problems"],
+    row = {"architecture": arch, "green": green,
+           "plan_ok": out["plan_ok"], "repaired": out["repaired"],
+           "plan_problems": out["plan_problems"],
            "applied": applied,
            "verdict": verdict.decision if verdict else None,
            "verdict_reason": verdict.reason if verdict else None,
@@ -149,6 +169,23 @@ def main() -> int:
             flag = "green" if row["green"] else "RED  "
             v = f"  reviewer={row['verdict']}" if row.get("verdict") else ""
             print(f"  [{flag}] {row['architecture']:<20} {row['fix'][:64]}{v}")
+        elif row.get("applied", "").startswith("refused"):
+            print(f"  [RED  ] {row['architecture']:<20} no fix: "
+                  f"{'; '.join(row['plan_problems'])[:64]}")
+
+    reviewed = [r for r in rows if r.get("verdict")]
+    if reviewed:
+        print("\nreviewer verdicts:")
+        for row in reviewed:
+            print(f"  {row['verdict']:<8} {row['verdict_reason']}")
+
+    b, c = by_arch.get("B planner", []), by_arch.get("C planner+reviewer", [])
+    if b and c:
+        def mean(g, k):
+            return sum(r[k] for r in g) / len(g)
+        print(f"\nreviewer extra cost per run (C minus B): "
+              f"{mean(c, 'tokens') - mean(b, 'tokens'):+.0f} tokens, "
+              f"{mean(c, 'seconds') - mean(b, 'seconds'):+.1f} seconds")
 
     write_json("artifacts/week05_architectures.json", {"rows": rows})
 

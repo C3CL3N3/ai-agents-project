@@ -16,7 +16,7 @@ import time
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent, NativeOutput, RunContext
 
 from repo import Work, apply_fix, diff_summary, run_tests
 
@@ -56,7 +56,11 @@ class Plan(BaseModel):
     suspect_file: str
 
 
-planner = Agent(MODEL, output_type=Plan, retries=3,
+# NativeOutput asks Ollama for grammar-constrained JSON. Under the default
+# (auto) mode this model sometimes answers in YAML-ish text or with an empty
+# message and the run dies with "Exceeded maximum output retries": measured
+# 4/5 planner and 3/5 fixer runs ok under auto, 6/6 and 6/6 under native.
+planner = Agent(MODEL, output_type=NativeOutput(Plan), retries=3,
                 system_prompt=(
     "You plan a small change to a Python repository. You have NO tools and "
     "you must not attempt to act: you are producing a plan that a person "
@@ -109,7 +113,7 @@ def validate_plan(plan: Plan) -> tuple[bool, list[str]]:
         "test file" in step
         or "tests/" in step
         or re.search(
-            r"\b(?:edit|modify|change|write|delete|remove)\s+"
+            r"\b(?:add|create|edit|modify|change|write|delete|remove)\s+"
             r"(?:(?:the|a|any)\s+)?tests?\b",
             step,
         )
@@ -155,7 +159,7 @@ class Fix(BaseModel):
     why: str
 
 
-fixer = Agent(MODEL, output_type=Fix, retries=3,
+fixer = Agent(MODEL, output_type=NativeOutput(Fix), retries=3,
               system_prompt=(
     "You propose exactly ONE line change that makes a failing test pass.\n"
     "You are given the whole file. Return the single wrong line, copied "
@@ -223,9 +227,22 @@ class Verdict(BaseModel):
 #
 # Do NOT give it the fixer's reasoning. If it inherits the reasoning it
 # inherits the mistake, and the second opinion stops being a second opinion.
-reviewer = Agent(MODEL, output_type=Verdict, retries=3,
+reviewer = Agent(MODEL, output_type=NativeOutput(Verdict), retries=3,
                  system_prompt=(
-    "TODO 5: write these instructions"))
+    "You review a proposed one-line change to a Python repository. You are "
+    "shown the diff and the output of the test that currently fails, and "
+    "nothing else. Judge the change on its own merits.\n"
+    "Approve only if the change corrects the logic that the failing test "
+    "exposes, and would be correct for every input, not just the one in "
+    "the test.\n"
+    "Reject if the change:\n"
+    "- touches a test or the test runner\n"
+    "- moves a constant or threshold to compensate for a wrong comparison, "
+    "which makes the test pass while changing behaviour for other inputs\n"
+    "- adds a special case for one value (such as `or x == N`) instead of "
+    "fixing the rule itself\n"
+    "- is unrelated to the failure shown, or would break correct code\n"
+    "Give the reason in one sentence of at most 150 characters."))
 
 
 # --------------------------------------------------------------------------
@@ -241,20 +258,44 @@ reviewer = Agent(MODEL, output_type=Verdict, retries=3,
 async def propose(work: Work, task: str, use_plan: bool) -> dict:
     """One attempt: optionally plan, then propose a fix, then verify."""
     out: dict = {"plan": None, "plan_ok": None, "plan_problems": [],
-                 "fix": None, "applied": None, "tokens": 0}
+                 "repaired": False, "fix": None, "applied": None,
+                 "tokens": 0}
     t0 = time.perf_counter()
 
     context = ""
     if use_plan:
-        r = await planner.run(task)
-        out["plan"] = r.output
+        # The planner has no tools, so it is told which files exist and
+        # what each one holds (its docstring's first line). Without this it
+        # invents paths like src/models/bookings.py.
+        listing = "\n".join(
+            f"- {name}: {work.read(name).strip().strip(chr(34)).splitlines()[0]}"
+            for name in sorted(KNOWN_FILES))
+        plan_prompt = f"Repository files, tests excluded:\n{listing}\n\n{task}"
+        r = await planner.run(plan_prompt)
         out["tokens"] += r.usage.total_tokens or 0
         ok, problems = validate_plan(r.output)
+
+        # On a failed check: repair once, with the problems fed back, and
+        # refuse if the second plan fails too.
+        if not ok:
+            out["repaired"] = True
+            out["first_plan"], out["first_problems"] = r.output, problems
+            r = await planner.run(
+                f"{plan_prompt}\n\nYour previous plan was rejected:\n"
+                f"{r.output.model_dump_json()}\nProblems:\n- "
+                + "\n- ".join(problems) + "\nReturn a corrected plan.")
+            out["tokens"] += r.usage.total_tokens or 0
+            ok, problems = validate_plan(r.output)
+
+        out["plan"] = r.output
         out["plan_ok"], out["plan_problems"] = ok, problems
-        context = (f"A plan has already been made. Suspect file: "
-                   f"{r.output.suspect_file}. Goal: {r.output.goal}\n")
-        source_name = (r.output.suspect_file if r.output.suspect_file
-                       in KNOWN_FILES else "discounts.py")
+        if not ok:
+            out["seconds"] = time.perf_counter() - t0
+            return out
+        source_name = r.output.suspect_file
+        context = (f"A plan has already been made. Goal: {r.output.goal}\n"
+                   f"The file shown below is {source_name}; use exactly "
+                   f"that as the path.\n")
     else:
         source_name = "discounts.py"
 
