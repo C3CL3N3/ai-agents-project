@@ -11,6 +11,7 @@ same endpoint in the same wire format. That is why you wrote the loop first.
 
 from __future__ import annotations
 
+import re
 import time
 from typing import Literal
 
@@ -50,7 +51,9 @@ class Plan(BaseModel):
     goal: str
     # TODO 1a: steps. Flat. What is the simplest type that still says
     #          "several ordered steps"?
+    steps: list[str]
     # TODO 1b: suspect_file. The file most likely to contain the bug.
+    suspect_file: str
 
 
 planner = Agent(MODEL, output_type=Plan, retries=3,
@@ -86,7 +89,36 @@ def validate_plan(plan: Plan) -> tuple[bool, list[str]]:
     Decide what happens on a failed check, repair once or refuse, and write
     the decision in DECISIONS.md.
     """
-    raise NotImplementedError("TODO 2: validate the plan")
+    problems: list[str] = []
+
+    if not 2 <= len(plan.steps) <= 6:
+        problems.append("plan must contain between two and six steps")
+
+    if plan.suspect_file not in KNOWN_FILES:
+        problems.append(
+            f"suspect_file must name a known repository file, got "
+            f"{plan.suspect_file!r}")
+
+    normalized_steps = [step.casefold() for step in plan.steps]
+    if not any("test" in step and any(verb in step
+                                     for verb in ("run", "execute", "verify"))
+               for step in normalized_steps):
+        problems.append("plan must include a step that runs the tests")
+
+    edits_test = any(
+        "test file" in step
+        or "tests/" in step
+        or re.search(
+            r"\b(?:edit|modify|change|write|delete|remove)\s+"
+            r"(?:(?:the|a|any)\s+)?tests?\b",
+            step,
+        )
+        for step in normalized_steps
+    )
+    if edits_test:
+        problems.append("plan must not propose editing a test")
+
+    return not problems, problems
 
 
 # --------------------------------------------------------------------------
@@ -117,6 +149,10 @@ class Fix(BaseModel):
     """
 
     # TODO 3a: path, old_line, new_line, why
+    path: str
+    old_line: str
+    new_line: str
+    why: str
 
 
 fixer = Agent(MODEL, output_type=Fix, retries=3,
