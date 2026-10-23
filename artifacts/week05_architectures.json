@@ -3,9 +3,9 @@
     {
       "architecture": "A baseline",
       "green": false,
-      "tool_calls": 24,
-      "tokens": 20680,
-      "seconds": 38.3
+      "tool_calls": 16,
+      "tokens": 16341,
+      "seconds": 201.5
     },
     {
       "architecture": "B planner",
@@ -17,61 +17,63 @@
       "verdict": null,
       "verdict_reason": null,
       "fix": "discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return start_hour >= OFF_PEAK_FROM_HOUR",
-      "tokens": 1172,
-      "seconds": 5.8
+      "tokens": 1188,
+      "seconds": 60.4
     },
     {
       "architecture": "C planner+reviewer",
-      "green": true,
+      "green": false,
       "plan_ok": true,
-      "repaired": false,
+      "repaired": true,
       "plan_problems": [],
-      "applied": "applied",
-      "verdict": "approve",
-      "verdict_reason": "Corrects the logic to include the start hour as off-peak, fixing the test failure without special casing.",
+      "applied": "not attempted",
+      "verdict": "reject",
+      "verdict_reason": "Changes logic to make one test pass but will fail for other start hours",
       "fix": "discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return start_hour >= OFF_PEAK_FROM_HOUR",
-      "tokens": 1721,
-      "seconds": 8.2
+      "tokens": 2094,
+      "seconds": 89.4
     },
     {
       "architecture": "A baseline",
       "green": false,
-      "tool_calls": 22,
-      "tokens": 17510,
-      "seconds": 28.0
+      "tool_calls": 4,
+      "tokens": 3339,
+      "seconds": 182.0
     },
     {
       "architecture": "B planner",
-      "green": true,
-      "plan_ok": true,
-      "repaired": false,
-      "plan_problems": [],
-      "applied": "applied",
-      "verdict": null,
-      "verdict_reason": null,
-      "fix": "discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return start_hour >= OFF_PEAK_FROM_HOUR",
-      "tokens": 1195,
-      "seconds": 9.0
-    },
-    {
-      "architecture": "C planner+reviewer",
       "green": true,
       "plan_ok": true,
       "repaired": true,
       "plan_problems": [],
       "applied": "applied",
-      "verdict": "approve",
-      "verdict_reason": "Correctly includes equal, ensuring 20 is included in off-peak.",
+      "verdict": null,
+      "verdict_reason": null,
       "fix": "discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return start_hour >= OFF_PEAK_FROM_HOUR",
-      "tokens": 2200,
-      "seconds": 11.5
+      "tokens": 1479,
+      "seconds": 53.7
+    },
+    {
+      "architecture": "C planner+reviewer",
+      "green": false,
+      "plan_ok": false,
+      "repaired": true,
+      "plan_problems": [
+        "plan must not propose editing a test"
+      ],
+      "applied": "refused: no valid plan",
+      "verdict": null,
+      "verdict_reason": null,
+      "fix": null,
+      "tokens": 743,
+      "seconds": 27.6
     },
     {
       "architecture": "A baseline",
       "green": false,
-      "tool_calls": 16,
-      "tokens": 13793,
-      "seconds": 21.1
+      "tool_calls": 6,
+      "tokens": 3753,
+      "seconds": 61.0
     },
     {
       "architecture": "B planner",
@@ -79,28 +81,27 @@
       "plan_ok": false,
       "repaired": true,
       "plan_problems": [
-        "suspect_file must name a known repository file, got ' discounts.py'",
         "plan must not propose editing a test"
       ],
       "applied": "refused: no valid plan",
       "verdict": null,
       "verdict_reason": null,
       "fix": null,
-      "tokens": 716,
-      "seconds": 6.1
+      "tokens": 712,
+      "seconds": 24.9
     },
     {
       "architecture": "C planner+reviewer",
-      "green": true,
+      "green": false,
       "plan_ok": true,
       "repaired": false,
       "plan_problems": [],
-      "applied": "applied",
-      "verdict": "approve",
-      "verdict_reason": "Change fixes the logic error causing the off-peak pricing to be one hour too early.",
+      "applied": "not attempted",
+      "verdict": "reject",
+      "verdict_reason": "Changes logic to make one test pass but will fail for start_hour exactly equal to OFF_PEAK_FROM_HOUR.",
       "fix": "discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return start_hour >= OFF_PEAK_FROM_HOUR",
       "tokens": 1700,
-      "seconds": 6.8
+      "seconds": 52.7
     }
   ]
 }

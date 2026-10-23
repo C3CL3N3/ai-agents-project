@@ -6,3 +6,7 @@ HowToWrite.md
 .gitignore
 .DS_Store
 skill.md
+__MACOSX/
+__pycache__/
+*.py[cod]
+*Zone.Identifier

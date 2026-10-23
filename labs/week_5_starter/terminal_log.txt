@@ -20,7 +20,7 @@ gold set loaded from: own
 gold set now holds 46 cases
 
 
-python 01_compare.py --runs 3
+ python 01_compare.py
                  pydantic-ai v2.59.0 • Python 3.12.3
       / \
      /   \       agent: baseline • model: ollama:qwen2.5:7b • tools: 4 • capabilities: 0
@@ -30,91 +30,26 @@ python 01_compare.py --runs 3
 `---.._|_..---'    or use any OpenTelemetry backend: https://pydantic.dev/docs/ai/logfire/#otel
 
                  goes away once observability is on — or PYDANTIC_AI_NO_BANNER=1
-    baseline run 1 raised UnexpectedModelBehavior
-Traceback (most recent call last):
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 2622, in _run_stream
-    raise ToolRetryError(m)
-pydantic_ai.exceptions.ToolRetryError: Please return text or include your response in a tool call.
 
-The above exception was the direct cause of the following exception:
+architecture             green    tokens  seconds
+--------------------------------------------------
+A baseline               0/3        7811    148.2
+B planner                2/3        1126     46.3
+C planner+reviewer       0/3        1512     56.6
 
-Traceback (most recent call last):
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/labs/week_5_starter/starter/01_compare.py", line 190, in <module>
-    raise SystemExit(main())
-                     ^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/labs/week_5_starter/starter/01_compare.py", line 132, in main
-    rows = asyncio.run(main_async(args.runs))
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
-    return runner.run(main)
-           ^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
-    return self._loop.run_until_complete(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
-    return future.result()
-           ^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/labs/week_5_starter/starter/01_compare.py", line 109, in main_async
-    rows.append(await run_planned(i, with_reviewer=False))
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/labs/week_5_starter/starter/01_compare.py", line 73, in run_planned
-    out = await propose(work, TASK, use_plan=True)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/labs/week_5_starter/starter/agents.py", line 249, in propose
-    r = await planner.run(task)
-        ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/agent/abstract.py", line 686, in run
-    node = await agent_run.next(node)  # pyright: ignore[reportArgumentType]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/run.py", line 656, in next
-    return await self._run_node_with_hooks(node, self._stream_and_advance)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/run.py", line 571, in _run_node_with_hooks
-    result = await lifecycle(node)
-             ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/run.py", line 551, in lifecycle
-    result = await step_fn(lifecycle_node)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/run.py", line 670, in _stream_and_advance
-    return await self._advance_graph(node)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/run.py", line 466, in _advance_graph
-    task = await self._graph_run.next(task)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py", line 579, in next
-    return await anext(self)
-           ^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py", line 556, in __anext__
-    raise self._next.error
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py", line 857, in _run_tracked_task
-    result = await self._run_task(t_)
-             ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_graph/graph_builder.py", line 915, in _run_task
-    output = await node.call(step_context)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_graph/step.py", line 253, in _call_node
-    return await node.run(GraphRunContext(state=ctx.state, deps=ctx.deps))
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 2390, in run
-    async with self.stream(ctx):
-  File "/usr/lib/python3.12/contextlib.py", line 217, in __aexit__
-    await anext(self.gen)
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 2411, in stream
-    async for _event in stream:
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/capabilities/combined.py", line 662, in wrap_run_event_stream
-    async for event in stream:
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/capabilities/abstract.py", line 950, in wrap_run_event_stream
-    async for event in stream:
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/capabilities/abstract.py", line 950, in wrap_run_event_stream
-    async for event in stream:
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_run_context.py", line 104, in dispatch_event_stream
-    async for event in stream:
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 238, in _with_event_stream_buffer
-    async for event in stream:
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 2628, in _run_stream
-    async for event in _run_stream():
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 2624, in _run_stream
-    ctx.state.consume_output_retry(ctx.deps.max_output_retries, error=e)
-  File "/home/dbatista/bics/GenAI/group/ai-agents-project/.venv/lib/python3.12/site-packages/pydantic_ai/_agent_graph.py", line 467, in consume_output_retry
-    raise exceptions.UnexpectedModelBehavior(message) from error
-pydantic_ai.exceptions.UnexpectedModelBehavior: Exceeded maximum output retries (3)
+what each architecture proposed:
+  [green] B planner            discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return s
+  [RED  ] C planner+reviewer   discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return s  reviewer=reject
+  [green] B planner            discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return s
+  [RED  ] C planner+reviewer   no fix: plan must not propose editing a test
+  [RED  ] B planner            no fix: plan must not propose editing a test
+  [RED  ] C planner+reviewer   discounts.py: return start_hour > OFF_PEAK_FROM_HOUR -> return s  reviewer=reject
+
+reviewer verdicts:
+  reject   Changes logic to make one test pass but will fail for other start hours
+  reject   Changes logic to make one test pass but will fail for start_hour exactly equal to OFF_PEAK_FROM_HOUR.
+
+reviewer extra cost per run (C minus B): +386 tokens, +10.2 seconds
+
+gold set loaded from: own
+gold set now holds 46 cases
