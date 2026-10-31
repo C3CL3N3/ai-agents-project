@@ -1,0 +1,14 @@
+{
+  "facts": [
+    {
+      "subject": "A. Muller",
+      "kind": "preference",
+      "text": "prefers email contact",
+      "handle": "fact-yfhGnPg-CYkUePGHNAgCVQ",
+      "written_at": "2026-10-31T11:44:31Z"
+    }
+  ],
+  "cases": {
+    "case-72720cae5cea": "A. Muller"
+  }
+}

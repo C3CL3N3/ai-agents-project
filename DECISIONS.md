@@ -482,59 +482,170 @@ T-05 by both models, 0 of 8 prompt defenses effective. Planned fix: week 11.
 
 ## Week 5
 
-**Run conditions.** model: [ ] | framework: Pydantic AI [version] |
-runs per architecture: [ ] | served locally | date: [YYYY-MM-DD] |
-table from: [the recording / my own runs]
+**Run conditions.** Model: qwen2.5:7b. Framework: Pydantic AI 2.59.0.
+Python: 3.12.3. Three runs per architecture were served on another student's
+laptop. The table comes from the updated results in
+`artifacts/week05_architectures.json` and the run output in
+`labs/week_5_starter/terminal_log.txt`.
 
 ### 1. The plan schema
 
 What I tried first, and what happened:
 
-[If you tried a nested list of Step objects, say what the error was. It does
-not fail gracefully and the error message does not mention schemas.]
+The obvious nested `list[Step]` schema repeatedly failed with
+`Exceeded maximum output retries`. The error did not explain that the schema
+was the problem.
 
 What I shipped, and why it is shaped that way:
 
-[...]
+`Plan` contains `goal: str`, `steps: list[str]`, and `suspect_file: str`.
+The flat list keeps the steps ordered without the reliability problems caused
+by nested structured output.
 
 ### 2. The validator
 
-| check | what it catches |
-| | |
-| | |
-| | |
+| Check | What it catches |
+| --- | --- |
+| step count is between two and six | plans that are empty, too vague, or over-scoped |
+| `suspect_file` is one of the known repository files | hallucinated or malformed file paths |
+| a step runs, executes, or verifies tests | plans with no verification step |
+| no step proposes editing a test | attempts to make the suite green by changing the verifier |
 
-On a failed check my system [repairs once / refuses], because [ ].
+When a check fails, the system sends the problems back to the planner once.
+If the repaired plan still fails, it refuses to apply the fix. That keeps the
+retry bounded and stops invalid plans from reaching the executor.
 
 ### 3. The three-way table
 
-| architecture | green | tokens (mean) | seconds (mean) |
-| A baseline | /3 | | |
-| B planner | /3 | | |
-| C planner + reviewer | /3 | | |
+| Architecture | Green | Tokens (mean) | Seconds (mean) |
+| --- | ---: | ---: | ---: |
+| A baseline | 0/3 | 7,811 | 148.2 |
+| B planner | 2/3 | 1,126 | 46.3 |
+| C planner + reviewer | 0/3 | 1,512 | 56.6 |
 
 ### 4. Why the baseline fails
 
-[Not "the model is too small". Look at what changed between A and B: it is
-not the model and it is not the prompt. Name it.]
+The baseline gives the model a free-form edit and tool loop. It spends many
+calls exploring and trying unconstrained changes, and it is also much slower
+in these runs. The planner narrows the task to one validated plan and one
+structured line-change proposal before the deterministic guardrails apply it.
 
 ### 5. The reviewer
 
-Verdicts across my runs: [ ] approve, [ ] reject.
+Verdicts across the three runs: 2 reject and 1 no verdict because the plan was
+refused by the validator.
 
-Would I ship it: [ ]. Extra cost: [ ] tokens, [ ] seconds per run.
+I would provisionally ship the planner without the reviewer. It went green in
+two of three runs, while the reviewer architecture went green in none. The
+reviewer also added 386 tokens and 10.2 seconds per run on average.
 
 The case where it would earn its cost:
 
-[...]
+A reviewer could earn that extra cost by rejecting a patch that passes the
+current test but changes the general rule incorrectly. In these runs it
+rejected the intended `>=` fix, so the extra step produced a false negative
+instead of protecting the change.
 
 ### 6. What my verifier cannot catch
 
-[The most valuable line on this page. The test suite is free, fast, and
-deterministic, and it still only checks the cases somebody wrote a test for.
-Name a change that would make the suite green and still be wrong. Week 10
-comes back for this.]
+The suite would remain green if `club_discount` returned `0.15` for every
+booking. It tests the club-true case, but not the required club-false case, so
+the implementation would still be wrong for non-club bookings.
 
 ### Deferred
 
-[Anything you did not get to, and why.]
+The live runs were performed on another student's laptop, not locally. The
+updated three-run result is now recorded here. Task B, the discount-rate
+refactoring, remains to be run and compared.
+
+## Week 6
+
+**Run conditions.** MCP SDK version: `mcp==2.0.0rc1`. Specification
+revision: 2026-07-28. The server and client runs were performed manually on
+another student's laptop on 2026-10-31. Model: not applicable to these
+protocol and A2A demonstrations.
+
+### 1. The handle
+
+Format I chose: `case-` followed by 12 random hexadecimal characters.
+
+A guessable handle would expose the existence and ordering of cases. It could
+also let someone try neighboring handles to read another resident's case.
+
+### 2. Conflict and retention
+
+- A write that contradicts an older fact: keep both, because the store keeps
+  the history instead of silently deleting what changed.
+- How long a record lives: no automatic expiry in this exercise. That keeps
+  the store simple, but a real service holding resident data needs an explicit
+  retention period and a deletion process.
+
+### 3. What k costs
+
+k = 3. Tokens added per call: [REPLACE WITH THE TOKEN COUNT FROM A MANUAL
+MEMORY RUN].
+
+At four hundred facts in the store, this design still limits the returned
+facts to k matches, but keyword scoring and the serialized store scan all
+facts for the selected subject. The call becomes slower as the store grows,
+and the full returned context still costs tokens. Observed result at 400
+facts: [REPLACE WITH WHAT HAPPENED AT 400 FACTS].
+
+### 4. Memory off against memory on
+
+| Mode | Tokens | Turns to finish |
+| --- | ---: | ---: |
+| Memory off | [REPLACE WITH MANUAL RESULT] | [REPLACE WITH MANUAL RESULT] |
+| Memory on | [REPLACE WITH MANUAL RESULT] | [REPLACE WITH MANUAL RESULT] |
+
+Memory adds context tokens when facts are recalled, but it can reduce the
+number of turns needed to recover information from an earlier run. Replace
+the values and the conclusion with the manual comparison.
+
+### 5. The protocol, at the wire
+
+| Server mode | Status | `Mcp-Session-Id` | Answered |
+| --- | ---: | --- | --- |
+| `stateless_http=True` | 200 | none | yes |
+| `stateless_http=False` | 400 | `30692737ac824f8497735035645fce7a` | no |
+
+The error the session-mode server returned, quoted exactly:
+
+`Bad Request: Missing session ID`
+
+Why the two-server handle demonstration does not prove this on its own:
+
+Both servers read the same file, and each client call opens a fresh
+connection. A handle can therefore resolve in both modes even when the
+protocol still uses sessions. The raw request comparison is the actual proof
+because the identical request was answered in stateless mode and rejected in
+session mode. The stateless server returned 200 without a session header. The
+session-mode server returned 400, exposed a session ID in the response
+headers, and reported `Bad Request: Missing session ID`.
+
+### 6. What forget does not reach
+
+`forget` removes the fact from the file-backed store, but it cannot remove
+text that was already copied into a running conversation's messages, model
+context, logs, or another system that received the text. If a resident asks
+for deletion, the store deletion is necessary but is not the same as erasing
+every copy that has already been disclosed.
+
+### A2A demonstration
+
+The client fetched the `translation-agent` card and found the `translate`
+skill. It delegated the translation of "opening hours" and received the
+French text "heures d'ouverture". It did not send the unsupported `summarize`
+request because the card did not advertise that skill.
+
+The failed task returned a normal `failed` state, so the client could apply
+its fallback policy. The slow task timed out after 2 seconds, but the client
+kept `task-4` because the remote work might still be running. When the
+artifact contained data instead of a text part, the client reported a
+mismatch rather than converting the data to a string.
+
+### Deferred
+
+- Replace the remaining memory measurements after the manual runs.
+- Run `04_a2a_channel.py` manually and replace any output-dependent notes if
+  its behavior differs from the documented design.
