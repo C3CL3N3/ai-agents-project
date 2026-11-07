@@ -6,9 +6,33 @@
       "text": "prefers email contact",
       "handle": "fact-yfhGnPg-CYkUePGHNAgCVQ",
       "written_at": "2026-10-31T11:44:31Z"
+    },
+    {
+      "subject": "A. Muller",
+      "kind": "preference",
+      "text": "prefers email contact",
+      "handle": "fact-gdWYhFFtkQ6LkoQM2-GGqw",
+      "written_at": "2026-11-07T13:56:09Z"
+    },
+    {
+      "subject": "A. Muller",
+      "kind": "preference",
+      "text": "prefers email contact",
+      "handle": "fact-ffceJ6tU9j0G9bx7E8nGOw",
+      "written_at": "2026-11-07T14:07:35Z"
+    },
+    {
+      "subject": "A. Muller",
+      "kind": "preference",
+      "text": "prefers email contact",
+      "handle": "fact-F1TvNduYrx-R-9JTgTNC0Q",
+      "written_at": "2026-11-07T14:32:52Z"
     }
   ],
   "cases": {
-    "case-72720cae5cea": "A. Muller"
+    "case-72720cae5cea": "A. Muller",
+    "case-46c307f244a8": "A. Muller",
+    "case-596d92a40f45": "A. Muller",
+    "case-e915960c6f64": "A. Muller"
   }
 }

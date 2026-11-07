@@ -1,0 +1,159 @@
+❯ python 01_mcp_client.py
+catalog: ['remember', 'recall', 'forget', 'open_case', 'case_subject']
+opened on 8000: case-46c307f244a8
+remembered on 8000: fact-gdWYhFFtkQ6LkoQM2-GGqw
+wrong subject on 8001: ERROR: unauthorized subject
+authorized on 8001: A. Muller
+recalled on 8001: preference: prefers email contact
+
+❯ python 02_stateless.py
+INFO:     Started server process [22554]
+INFO:     Waiting for application startup.
+[11/07/26 14:57:43] INFO     StreamableHTTP session manager started                                             streamable_http_manager.py:162
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8941 (Press CTRL+C to quit)
+INFO:     127.0.0.1:42380 - "POST /mcp HTTP/1.1" 200 OK
+[11/07/26 14:57:45] INFO     Terminating session: None                                                                  streamable_http.py:855
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+                    INFO     StreamableHTTP session manager shutting down                                       streamable_http_manager.py:166
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22554]
+INFO:     Started server process [22613]
+INFO:     Waiting for application startup.
+[11/07/26 14:57:46] INFO     StreamableHTTP session manager started                                             streamable_http_manager.py:162
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8942 (Press CTRL+C to quit)
+[11/07/26 14:57:49] INFO     Created new transport with session ID: c5b2cb30342345af92e65b75f946dc95            streamable_http_manager.py:325
+INFO:     127.0.0.1:35018 - "POST /mcp HTTP/1.1" 400 Bad Request
+
+server mode               status                      Mcp-Session-Id  answered
+------------------------------------------------------------------------------
+stateless_http=True          200                                None      True
+stateless_http=False         400    c5b2cb30342345af92e65b75f946dc95     False
+
+  stateless body: event: message
+data: {"jsonrpc":"2.0","id":1,"result":{"tools":[{"description":"Read back everything attached
+  session   body: {"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"Bad Request: Missing session ID"}}
+
+  [PASS] stateless server answers
+  [PASS] stateless server has no session id
+  [PASS] session server rejects identical request
+  [PASS] session server identifies missing session id
+                    INFO     Terminating session: c5b2cb30342345af92e65b75f946dc95                                      streamable_http.py:855
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+                    INFO     StreamableHTTP session manager shutting down                                       streamable_http_manager.py:166
+INFO:     Application shutdown complete.
+INFO:     Finished server process [22613]
+
+❯ python 03_a2a.py
+card fetched: translation-agent, skills ['translate']
+
+1 delegated
+   -> {'taskId': 'task-1', 'state': 'completed', 'artifact': {'parts': [{'text': "heures d'ouverture"}]}}
+
+2 not delegated
+   -> the card declares no 'summarize' skill, so this is handled locally and no request is sent
+
+3 failed
+   -> {'taskId': 'task-3', 'state': 'failed', 'error': 'the glossary does not cover this text'}
+   policy here: fall back to the local glossary and mark the answer degraded. Escalating to a human is equally defensible.
+
+4 timed out
+   -> timeout after 2.0s (TimeoutError)
+   the task id 'task-4' is kept, because the work may still be running and an abandoned id cannot be chased
+
+5 an artifact whose parts are not text
+   -> artifact has no text part: [{'data': {'x': 1}}]
+   report the mismatch rather than stringifying it. An agent that coerces unknown output into a string is an agent that will one day show a resident a dict.
+
+python 04_a2a_channel.py
+card: translation-agent ['translate']
+completed: {'taskId': 'task-1', 'state': 'completed', 'artifact': {'parts': [{'text': "heures d'ouverture"}]}}
+failed: {'taskId': 'task-2', 'state': 'failed', 'error': 'translation is not available'}
+timed out: TimeoutError task id kept: task-3
+artifact mismatch: [{'data': {'unsupported': True}}]
+
+~/b/G/g/ai-agents-project/l/week06/starter  main !3 ?2 
+❯ >....                                                                                   
+
+start = perf_counter()
+results = store.search("Test Subject", "fact", k=3)
+elapsed = perf_counter() - start
+
+print("facts stored:", len(store.facts))
+print("facts returned:", len(results))
+print("search time:", elapsed, "seconds")
+print("results:", results)
+PY
+facts stored: 400
+facts returned: 3
+search time: 0.0007236270012072055 seconds
+results: ['note: fact number 248', 'note: fact number 249', 'note: fact number 250']
+
+ ~/b/G/g/ai-agents-project/l/week06/starter  main !3 ?2 
+❯ >....                                                                                   
+        }
+    ],
+)
+
+print(response.choices[0].message.content)
+print()
+print("memory: off")
+print("model turns: 1")
+print("total tokens:", response.usage.total_tokens)
+PY
+
+
+
+There is no public or verified information indicating that A. Muller has a preferred contact method, as A. Muller could refer to various individuals (e.g., a researcher, professional, or public figure), and details about their communication preferences are not publiclydocumented or standardized.
+
+If you are referring to a specific individual (e.g., a person in academia, business, or another field), please provide more context or clarify the full name or field of expertise.This would allow for a more accurate and helpful response.
+
+Otherwise, if you are looking to contact someone named A. Muller, the best approach is typically to:
+
+- Check official websites or professional profiles (e.g., LinkedIn, academic databases).
+- Use formal email or phone if listed.
+- Contact through official institutional channels.
+
+Let me know if you'd like help crafting a message or finding a reliable contact method!
+
+memory: off
+model turns: 1
+total tokens: 195
+
+ >....                                                                                   
+    print("Answer:", response.choices[0].message.content)
+    print("Memory: on")
+    print("Model turns: 1")
+    print("Prompt tokens:", usage.prompt_tokens)
+    print("Completion tokens:", usage.completion_tokens)
+    print("Total tokens:", usage.total_tokens)
+
+
+asyncio.run(main())
+PY
+Recalled memory: preference: prefers email contact
+Answer: A. Muller's preferred contact method is email.
+Memory: on
+Model turns: 1
+Prompt tokens: 31
+Completion tokens: 12
+Total tokens: 43
+
+ >....                                                                                   
+
+start = perf_counter()
+results = store.search("Test Subject", "fact", k=3)
+elapsed = perf_counter() - start
+
+print("facts stored:", len(store.facts))
+print("facts returned:", len(results))
+print("search time:", elapsed, "seconds")
+print("results:", results)
+PY
+facts stored: 400
+facts returned: 3
+search time: 0.0008206940001400653 seconds
+results: ['note: fact number 0', 'note: fact number 1', 'note: fact number 2']

@@ -504,12 +504,12 @@ by nested structured output.
 
 ### 2. The validator
 
-| Check | What it catches |
-| --- | --- |
-| step count is between two and six | plans that are empty, too vague, or over-scoped |
-| `suspect_file` is one of the known repository files | hallucinated or malformed file paths |
-| a step runs, executes, or verifies tests | plans with no verification step |
-| no step proposes editing a test | attempts to make the suite green by changing the verifier |
+| Check                                               | What it catches                                           |
+| --------------------------------------------------- | --------------------------------------------------------- |
+| step count is between two and six                   | plans that are empty, too vague, or over-scoped           |
+| `suspect_file` is one of the known repository files | hallucinated or malformed file paths                      |
+| a step runs, executes, or verifies tests            | plans with no verification step                           |
+| no step proposes editing a test                     | attempts to make the suite green by changing the verifier |
 
 When a check fails, the system sends the problems back to the planner once.
 If the repaired plan still fails, it refuses to apply the fix. That keeps the
@@ -517,11 +517,11 @@ retry bounded and stops invalid plans from reaching the executor.
 
 ### 3. The three-way table
 
-| Architecture | Green | Tokens (mean) | Seconds (mean) |
-| --- | ---: | ---: | ---: |
-| A baseline | 0/3 | 7,811 | 148.2 |
-| B planner | 2/3 | 1,126 | 46.3 |
-| C planner + reviewer | 0/3 | 1,512 | 56.6 |
+| Architecture         | Green | Tokens (mean) | Seconds (mean) |
+| -------------------- | ----: | ------------: | -------------: |
+| A baseline           |   0/3 |         7,811 |          148.2 |
+| B planner            |   2/3 |         1,126 |           46.3 |
+| C planner + reviewer |   0/3 |         1,512 |           56.6 |
 
 ### 4. Why the baseline fails
 
@@ -560,92 +560,83 @@ refactoring, remains to be run and compared.
 
 ## Week 6
 
-**Run conditions.** MCP SDK version: `mcp==2.0.0rc1`. Specification
-revision: 2026-07-28. The server and client runs were performed manually on
-another student's laptop on 2026-10-31. Model: not applicable to these
-protocol and A2A demonstrations.
+**Run conditions.** MCP SDK version: `mcp==2.0.0rc1` | specification revision:
+`2026-07-28` | model: `qwen3:4b-instruct` via Ollama |
+served locally | date: `2026-11-07`
 
 ### 1. The handle
 
-Format I chose: `case-` followed by 12 random hexadecimal characters.
+Format I chose: opaque random handles, such as `case-46c307f244a8` and
+`fact-gdWYhFFtkQ6LkoQM2-GGqw`.
 
-A guessable handle would expose the existence and ordering of cases. It could
-also let someone try neighboring handles to read another resident's case.
+A guessable sequential handle could reveal how many records exist and allow
+someone to guess another resident's identifier and access their data.
 
 ### 2. Conflict and retention
 
-- A write that contradicts an older fact: keep both, because the store keeps
-  the history instead of silently deleting what changed.
-- How long a record lives: no automatic expiry in this exercise. That keeps
-  the store simple, but a real service holding resident data needs an explicit
-  retention period and a deletion process.
+- A write that contradicts an older fact: **keep both**, because this
+  preserves history instead of silently overwriting what changed. A later
+  retrieval policy or caller must resolve the contradiction.
+- How long a record lives: **indefinitely by default**, because the starter
+  store has no expiry mechanism. A real service holding residents' data would
+  need an explicit retention and deletion policy.
 
 ### 3. What k costs
 
-k = 3. Tokens added per call: [REPLACE WITH THE TOKEN COUNT FROM A MANUAL
-MEMORY RUN].
+k = `3`, as used by the MCP client. Tokens added per call: **not measured**.
 
-At four hundred facts in the store, this design still limits the returned
-facts to k matches, but keyword scoring and the serialized store scan all
-facts for the selected subject. The call becomes slower as the store grows,
-and the full returned context still costs tokens. Observed result at 400
-facts: [REPLACE WITH WHAT HAPPENED AT 400 FACTS].
+With 400 facts for one subject, the store remained usable and returned
+exactly 3 facts. Search took `0.0008206940001400653` seconds and returned
+`fact number 0`, `fact number 1`, and `fact number 2`. The store-only test
+did not report model-context tokens.
 
 ### 4. Memory off against memory on
 
-| Mode | Tokens | Turns to finish |
-| --- | ---: | ---: |
-| Memory off | [REPLACE WITH MANUAL RESULT] | [REPLACE WITH MANUAL RESULT] |
-| Memory on | [REPLACE WITH MANUAL RESULT] | [REPLACE WITH MANUAL RESULT] |
+|            | tokens | turns to finish |
+| ---------- | -----: | --------------: |
+| memory off |    195 |               1 |
+| memory on  |     43 |               1 |
 
-Memory adds context tokens when facts are recalled, but it can reduce the
-number of turns needed to recover information from an earlier run. Replace
-the values and the conclusion with the manual comparison.
+Both runs used one model turn. Without memory, the model used 195 total
+tokens and said it could not identify a specific A. Muller or preference.
+With memory, the model recalled `preference: prefers email contact` and
+answered that email was preferred, using 31 prompt tokens, 12 completion
+tokens, and 43 total tokens. In this run, memory-on used fewer total tokens,
+but the two prompts were not identical, so this is not a controlled causal
+comparison.
 
 ### 5. The protocol, at the wire
 
-| Server mode | Status | `Mcp-Session-Id` | Answered |
-| --- | ---: | --- | --- |
-| `stateless_http=True` | 200 | none | yes |
-| `stateless_http=False` | 400 | `30692737ac824f8497735035645fce7a` | no |
+| server mode            | status | Mcp-Session-Id                     | answered |
+| ---------------------- | -----: | ---------------------------------- | -------- |
+| `stateless_http=True`  |    200 | none                               | yes      |
+| `stateless_http=False` |    400 | `c5b2cb30342345af92e65b75f946dc95` | no       |
 
-The error the session-mode server returned, quoted exactly:
+The session-mode error, quoted exactly, was:
 
 `Bad Request: Missing session ID`
 
-Why the two-server handle demonstration does not prove this on its own:
-
-Both servers read the same file, and each client call opens a fresh
-connection. A handle can therefore resolve in both modes even when the
-protocol still uses sessions. The raw request comparison is the actual proof
-because the identical request was answered in stateless mode and rejected in
-session mode. The stateless server returned 200 without a session header. The
-session-mode server returned 400, exposed a session ID in the response
-headers, and reported `Bad Request: Missing session ID`.
+The two-server handle demonstration does not prove statelessness by itself:
+both instances read the same file-backed state, and every client call opens a
+fresh connection. The handle can therefore work in both modes. The identical
+raw request in `02_stateless.py` is the actual proof because stateless mode
+answers it while session mode rejects it.
 
 ### 6. What forget does not reach
 
-`forget` removes the fact from the file-backed store, but it cannot remove
-text that was already copied into a running conversation's messages, model
-context, logs, or another system that received the text. If a resident asks
-for deletion, the store deletion is necessary but is not the same as erasing
-every copy that has already been disclosed.
-
-### A2A demonstration
-
-The client fetched the `translation-agent` card and found the `translate`
-skill. It delegated the translation of "opening hours" and received the
-French text "heures d'ouverture". It did not send the unsupported `summarize`
-request because the card did not advertise that skill.
-
-The failed task returned a normal `failed` state, so the client could apply
-its fallback policy. The slow task timed out after 2 seconds, but the client
-kept `task-4` because the remote work might still be running. When the
-artifact contained data instead of a text part, the client reported a
-mismatch rather than converting the data to a string.
+`forget` removes the fact from the durable store, but it cannot remove text
+already copied into a running conversation, logs, or other derived context.
+If a resident requests deletion, the stored record should be deleted, while
+the service must explain that previously disclosed conversation content may
+still require a separate retention or deletion process.
 
 ### Deferred
 
-- Replace the remaining memory measurements after the manual runs.
-- Run `04_a2a_channel.py` manually and replace any output-dependent notes if
-  its behavior differs from the documented design.
+The A2A runs completed successfully. The agent card advertised the `translate`
+skill, so the translation task was delegated and returned a text artifact.
+The unsupported `summarize` task was not sent. The failure path returned
+`state: failed`; the timeout kept the task ID; and an artifact without a text
+part was reported as a mismatch instead of being stringified.
+
+The `k=3` token cost and the model-context token count for the 400-fact test
+were not reported
