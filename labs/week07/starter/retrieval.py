@@ -34,7 +34,30 @@ def embed(texts: list[str], batch: int = 32) -> list[list[float]]:
     POST to f"{OLLAMA_URL}/api/embed" with a JSON body of
     {"model": EMBED_MODEL, "input": [...]} and read the "embeddings" key.
     """
-    raise NotImplementedError("TODO 3a: embed in batches")
+    if batch <= 0:
+        raise ValueError("batch must be greater than zero")
+
+    vectors: list[list[float]] = []
+    for start in range(0, len(texts), batch):
+        payload = json.dumps({
+            "model": EMBED_MODEL,
+            "input": texts[start:start + batch],
+        }).encode("utf-8")
+        request = urllib.request.Request(
+            f"{OLLAMA_URL}/api/embed",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=180) as response:
+            body = json.loads(response.read())
+        batch_vectors = body.get("embeddings")
+        if not isinstance(batch_vectors, list):
+            raise ValueError("embedding response did not contain embeddings")
+        if len(batch_vectors) != len(texts[start:start + batch]):
+            raise ValueError("embedding response contained the wrong number of vectors")
+        vectors.extend(batch_vectors)
+    return vectors
 
 
 class DenseIndex:
@@ -56,11 +79,34 @@ class DenseIndex:
         ids Chroma returns back to objects. Set self.dim so the brief's
         conditions line has something to record.
         """
-        raise NotImplementedError("TODO 3b: build the index")
+        import chromadb
+
+        self.chunks = {chunk.chunk_id: chunk for chunk in chunks}
+        self.collection = chromadb.EphemeralClient().get_or_create_collection(
+            name=name,
+            metadata={"hnsw:space": "cosine"},
+        )
+        vectors = embed([chunk.text for chunk in chunks])
+        self.collection.add(
+            ids=[chunk.chunk_id for chunk in chunks],
+            embeddings=vectors,
+            metadatas=[
+                {"doc_id": chunk.doc_id, "section": chunk.section}
+                for chunk in chunks
+            ],
+        )
+        self.dim = len(vectors[0]) if vectors else 0
 
     def search(self, query: str, k: int = 20) -> list[Chunk]:
         """Embed the query, ask the collection, map ids back to Chunks."""
-        raise NotImplementedError("TODO 3b: search the index")
+        if k <= 0 or not self.chunks:
+            return []
+        result = self.collection.query(
+            query_embeddings=embed([query]),
+            n_results=min(k, len(self.chunks)),
+        )
+        ids = result.get("ids", [[]])[0]
+        return [self.chunks[chunk_id] for chunk_id in ids]
 
 
 def keyword_search(chunks: list[Chunk], query: str,
@@ -74,4 +120,20 @@ def keyword_search(chunks: list[Chunk], query: str,
     Break ties deterministically, by chunk_id, or two runs of your own code
     will disagree and you will spend ten minutes blaming the embedder.
     """
-    raise NotImplementedError("TODO 3c: term-overlap search")
+    if k <= 0:
+        return []
+
+    terms = {
+        term.lower()
+        for term in re.findall(r"[\w-]+", query)
+        if len(term) > 2
+    }
+    scored = []
+    for chunk in chunks:
+        words = {word.lower() for word in re.findall(r"[\w-]+", chunk.text)}
+        score = len(terms & words)
+        if score:
+            scored.append((score, chunk.chunk_id, chunk))
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return [chunk for _, _, chunk in scored[:k]]

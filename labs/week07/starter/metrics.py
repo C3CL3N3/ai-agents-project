@@ -49,7 +49,11 @@ def rank_of_first_gold(ranked_chunks, question) -> int | None:
     failure from appearing at rank forty, and the two must not be averaged
     together.
     """
-    raise NotImplementedError("TODO 2a: rank of the first gold chunk")
+    wanted = gold_keys(question)
+    for rank, chunk in enumerate(ranked_chunks, start=1):
+        if chunk.key in wanted:
+            return rank
+    return None
 
 
 def recall_at_k(ranked_chunks, question, k: int = 5) -> float:
@@ -59,7 +63,12 @@ def recall_at_k(ranked_chunks, question, k: int = 5) -> float:
     that all appear should count once, or a question whose answer happens to
     be long scores higher for no reason.
     """
-    raise NotImplementedError("TODO 2b: recall at k, over sections")
+    wanted = gold_keys(question)
+    if not wanted or k <= 0:
+        return 0.0
+
+    retrieved = {chunk.key for chunk in ranked_chunks[:k]}
+    return len(wanted & retrieved) / len(wanted)
 
 
 def score(ranked_chunks, question, k: int = 5) -> Scored:

@@ -52,7 +52,30 @@ def chunk_sections(sections: list[Section], size: int = 600,
     drop text between chunks or repeat almost all of it, and both look fine
     until a number goes missing from the middle of a section.
     """
-    raise NotImplementedError("TODO 1: chunk, keeping doc_id and section")
+    if size <= 0:
+        raise ValueError("size must be greater than zero")
+    if overlap < 0 or overlap >= size:
+        raise ValueError("overlap must be non-negative and smaller than size")
+
+    chunks: list[Chunk] = []
+    stride = size - overlap
+
+    for section in sections:
+        text = section.text
+        for start in range(0, len(text), stride):
+            chunk_text = f"{section.section}\n{text[start:start + size]}"
+            chunks.append(
+                Chunk(
+                    chunk_id=f"{section.doc_id}::{section.section}::{start}",
+                    doc_id=section.doc_id,
+                    section=section.section,
+                    text=chunk_text,
+                )
+            )
+            if start + size >= len(text):
+                break
+
+    return chunks
 
 
 def load_chunks(size: int = 600, overlap: int = 80) -> list[Chunk]:
