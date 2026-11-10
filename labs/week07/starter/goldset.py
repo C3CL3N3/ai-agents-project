@@ -70,10 +70,18 @@ GOLD: list[GoldQuestion] = [
         "I have been asked to fill in form RB-1140b. What is it for?",
         ("RB-VIGNETTE::How to apply",),
         ("rare-token",),
-        "The query carries the string RB-1140b. Rare, exact, and "
-        "semantically empty, so dense retrieval is the wrong tool for it "
-        "and keyword search is the right one. Note that a superseded page "
-        "carries the near-identical string RB-1140a.",
+        "The query carries the string RB-1140b. It was expected to defeat "
+        "dense retrieval and favour keyword search. Measured 2026-11-10 "
+        "(nomic-embed-text, 768 dim, 600/80 chunks) it does the opposite: "
+        "dense rank 1, keyword rank 14 (15 at 300, 4 at 1200). Dense wins "
+        "because the query also says 'form', 'fill in' and 'what is it "
+        "for', which match the 'How to apply' section by meaning. Keyword "
+        "loses because unweighted term overlap gives the rare token one "
+        "point, the same as 'form' or 'have', so a dozen chunks tie and "
+        "the tie-break by chunk id pushes the gold chunk down. A rare "
+        "token helps keyword search only if the scorer weights rare terms "
+        "(IDF, BM25). The superseded page's RB-1140a is a different token "
+        "and does not match; dense ranks that page second, not first.",
     ),
     GoldQuestion(
         "Q03",

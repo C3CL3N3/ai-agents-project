@@ -132,3 +132,32 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# ---------------------------------------------------------------------------
+# Written answers. Measured 2026-11-10, own index: nomic-embed-text, 768 dim,
+# size 600, overlap 80, 84 chunks, k = 5, Chroma (cosine).
+# ---------------------------------------------------------------------------
+#
+# TODO 4a. Ten of eleven at rank one is evidence that the task is easy: one
+# short question per topic against ten documents with one topic each, which
+# a 768-dimension embedder separates without effort. It does not show that
+# the pipeline is good.
+#
+# TODO 4b. Q05 fails on both (dense 22, keyword 17, recall@5 0.00). It asks
+# for two things from two documents in one vector, and the car to parking
+# vignette step is not in the query at all. The top five are arrival intro
+# chunks and the shuttle bus. No chunk size fixes it: chunks never cross a
+# section, let alone a document, so no single chunk can hold both gold
+# sections. Measured dense 30 / 22 / 20 at 300 / 600 / 1200.
+#
+# TODO 4c. Q02 has the widest margin (dense 1, keyword 14), but that margin is
+# mostly the keyword scorer's lack of term weighting. The clean case of
+# meaning beating words is Q11 (dense 1, keyword 12): "declare" and "must"
+# pull keyword search into RB-ARRIVEE ("Who must declare"), while dense
+# reads the question as being about a dog.
+#
+# TODO 5. The Q02 note claimed that the rare exact token RB-1140b is where
+# dense loses and keyword wins. Measured: dense 1, keyword 14. The note in
+# goldset.py is rewritten to say so, and to say what keyword search would
+# need (IDF or BM25 weighting) before the original claim could be true.

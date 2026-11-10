@@ -640,3 +640,212 @@ part was reported as a mismatch instead of being stringified.
 
 The `k=3` token cost and the model-context token count for the 400-fact test
 were not reported
+
+## Week 7
+
+**Run conditions.** embedding model: `nomic-embed-text:latest` via Ollama |
+dimensionality: 768 | chunk size: 600 characters | overlap: 80 | k: 5 |
+store: Chroma (ephemeral, cosine) | date: 2026-11-10 | table from: my own
+index (the recording, at 95 chunks, gives the same ranks on every question)
+
+### 1. The chunker
+
+size 600, overlap 80, because most sections fit in one or two chunks of 600
+characters, so a chunk usually holds a whole rule with its section heading
+prepended, and 80 characters of overlap carries one sentence across a
+boundary so a figure is not split from its subject. The sweep (homework,
+below) showed that dense ranks are the same at 300, 600 and 1200 on ten of
+eleven questions. At k=5, 600 keeps the retrieved context to about 3,000
+characters, half of what 1200 would cost for no measured gain.
+
+My chunker gives 84 chunks against the recording's 95. It stops a section
+once a window reaches the section's end, instead of emitting a final short
+tail chunk. Ranks are identical, so the difference does not change any row.
+
+### 2. The index
+
+84 chunks, 768 dimensions, 0.67 seconds for one full indexing run (embedding
+in batches of 32 plus the Chroma `add`, with the embedder already loaded).
+The first indexing run of the session took 3.60 s for 145 chunks, which
+includes loading the embedding model. The whole `01_retrieve.py` live run,
+including Python start-up and the chromadb import, took 40.9 s wall-clock.
+
+### 3. The table
+
+| qid |   dense rank | keyword rank | recall@5 (dense) | tags                   |
+| --- | -----------: | -----------: | ---------------: | ---------------------- |
+| Q01 |            1 |            3 |             1.00 | distractor, superseded |
+| Q02 |            1 |           14 |             1.00 | rare-token             |
+| Q03 |            1 |            1 |             1.00 | easy                   |
+| Q04 |            1 |            1 |             1.00 | vocabulary             |
+| Q05 |           22 |           17 |             0.00 | multi-document         |
+| Q06 |            1 |            5 |             1.00 | negation               |
+| Q07 |            1 |            3 |             1.00 | easy                   |
+| Q08 |            1 |            1 |             1.00 | numeric                |
+| Q09 |            1 |            2 |             1.00 | distractor             |
+| Q10 |            1 |            1 |             1.00 | easy                   |
+| Q11 |            1 |           12 |             1.00 | easy                   |
+| Q12 | unanswerable |            - |                - | unanswerable           |
+
+Dense puts the gold chunk in the top 5 on 10/11 questions. Dense beats
+keyword on 6 questions and ties on 4. Keyword beats dense on 1 (Q05, 17
+against 22), and both fail there. Keyword recall@5 is 0.00 on Q02, Q05 and
+Q11. Stored in `artifacts/week07_retrieval.json`.
+
+Q12 still returns five chunks (shuttle fares, vignette zones, building
+permits). The retriever has no way to say "nothing relevant", so refusal has
+to be decided after retrieval.
+
+The question where dense beats keyword by the most is Q02 (1 against 14), but
+most of that margin comes from the keyword scorer having no term weighting
+(see entry 6). The cleaner case of meaning beating words is Q11 (1 against
+12). "Declare" and "must" pull keyword search into RB-ARRIVEE's "Who must
+declare", while dense retrieval reads the question as being about a dog.
+
+### 4. Good pipeline, or easy task?
+
+It is evidence that the task is easy: eleven short questions against ten
+documents that each cover one topic is a separation any 768-dimension
+embedder makes without effort, so rank one on ten of eleven tells me the
+pipeline is not broken, not that it is good.
+
+### 5. The question that fails on both
+
+Question: Q05, "I have just moved to Remerbaach and I own a car. What do I
+have to do at the commune?". Dense rank 22, keyword rank 17.
+
+Why it fails:
+
+The question asks for two things at once, and the answer is in two sections
+of two documents: RB-ARRIVEE::Deadline and RB-VIGNETTE::How to apply. One
+query embedding is a single point somewhere between "moving in" and "car",
+and it lands nearer to neither gold section than to general chunks. The
+dense top five are RB-ARRIVEE "Who must declare", RB-TRANSPORT "The communal
+shuttle", the RB-ARRIVEE and RB-TRANSPORT intros, and RB-HIVER. The two gold
+sections rank 22 and 24. The step from "I own a car" to "you need a resident
+parking vignette" is also not in the query at all: neither "parking" nor
+"vignette" appears, so keyword search has nothing to match and dense
+retrieval must make an inference that a similarity search does not make. The
+car pulls dense retrieval toward the shuttle bus instead.
+
+Would any chunk size fix it? No, because chunks never cross a section
+boundary, let alone a document boundary, so no chunk can hold both gold
+sections at any size. Measured dense ranks: 30 at 300, 22 at 600, 20 at 1200. Keyword: 44, 17, 13. Recall@5 is 0.00 at every size. This is a limit
+of answering a compositional question with a single vector, and the fix is
+on the query side (decomposition), not on the chunker.
+
+**Stretch, decomposition.** I split Q05 into "I have just moved to
+Remerbaach. What do I have to declare at the commune?" and "I own a car. How
+do I apply for a resident parking vignette?", retrieved for each, and merged
+the two lists round-robin without duplicates. Gold rank improved from 22 to
+12, but recall@5 is still 0.00. Each sub-query found the right **document**
+but the wrong **section**: RB-ARRIVEE "Who must declare" instead of
+"Deadline", and RB-VIGNETTE "Who can apply" instead of "How to apply". The
+superseded RB-VIGNETTE-2024 also took two of the vignette sub-query's top
+three places. Cost: two embedding calls instead of one (0.03 s together).
+In a real pipeline it would also cost one model call to do the split. My
+split is optimistic, too: I wrote "parking vignette" into it because I know
+the corpus, and a model doing the decomposition would have to make that
+inference itself. Partial result: decomposition fixes the document-level
+problem, not the section-level one.
+
+### 6. The gold-set correction
+
+The note said: the query carries the string RB-1140b, "rare, exact, and
+semantically empty, so dense retrieval is the wrong tool for it and keyword
+search is the right one."
+
+My measurement said: dense rank 1, keyword rank 14 (recall@5 0.00 for
+keyword). At 300 characters keyword rank is 15, at 1200 it is 4. Dense is at
+rank 1 at all three sizes.
+
+The corrected note (now in `labs/week07/starter/goldset.py`):
+
+> The query carries the string RB-1140b. It was expected to defeat dense
+> retrieval and favour keyword search. Measured 2026-11-10 (nomic-embed-text,
+> 768 dim, 600/80 chunks) it does the opposite: dense rank 1, keyword rank 14
+> (15 at 300, 4 at 1200). Dense wins because the query also says "form",
+> "fill in" and "what is it for", which match the "How to apply" section by
+> meaning. Keyword loses because unweighted term overlap gives the rare token
+> one point, the same as "form" or "have", so a dozen chunks tie and the
+> tie-break by chunk id pushes the gold chunk down. A rare token helps
+> keyword search only if the scorer weights rare terms (IDF, BM25). The
+> superseded page's RB-1140a is a different token and does not match; dense
+> ranks that page second, not first.
+
+The original note assumed that keyword search is good at exact tokens. Mine
+is not, because it counts a match on `RB-1140b` exactly like a match on
+"have". The 13 chunks ahead of the gold one are RB-ARRIVEE, RB-CSA and
+RB-ETATCIVIL chunks that match several common question words and sort
+before RB-VIGNETTE alphabetically. The near-identical RB-1140a is not the
+cause, as the probe notes suggested: `RB-1140a` and `RB-1140b` are different
+tokens to an exact-match scorer.
+
+What it cost to find this: one measurement, which the table already
+contained. What it would have cost not to find it: a hybrid-retrieval stretch
+built on the premise that keyword search rescues the rare-token question,
+when on this corpus and this scorer keyword search is what loses it.
+
+### Homework: the chunk sweep
+
+Dense rank / keyword rank, by question name. Overlap 40 at 300, 80 at 600 and 1200. Chunks: 145, 84, 57.
+
+| qid | 300         | 600     | 1200      |
+| --- | ----------- | ------- | --------- |
+| Q01 | 1 / 3       | 1 / 3   | 1 / 4     |
+| Q02 | 1 / 15      | 1 / 14  | 1 / **4** |
+| Q05 | **30 / 44** | 22 / 17 | 20 / 13   |
+| Q06 | 1 / 5       | 1 / 5   | 1 / **1** |
+| Q09 | 1 / 2       | 1 / 2   | 1 / 4     |
+| Q11 | 1 / 14      | 1 / 12  | 1 / 14    |
+
+Questions not listed (Q03, Q04, Q07, Q08, Q10) stay within one rank. Dense
+retrieval does not move on any question except Q05, which fails at every
+size. Keyword search is what moves. At 1200, Q02 enters the keyword top 5
+because the whole RB-VIGNETTE "How to apply" section and its neighbours fit in
+fewer, larger chunks, so fewer chunks tie with it. Q06 reaches keyword rank 1
+for the same reason. Q01 and Q09 slip by one or two ranks as larger chunks
+from other documents collect more incidental term matches. At 300, Q05 gets
+worse on both retrievers because each chunk holds less of either topic.
+
+### Wiring
+
+`app/` now holds `chunking.py`, `corpus_loader.py` and `retrieval.py` with
+relative imports, the week 6 `memory.py`, and a small `app/run.py`. The
+corpus is copied to `corpus/`. `MemoryStore.search(subject, query, k)` keeps
+its signature. Its body is now dense retrieval at 600 / 80, and the index is
+built once per process.
+
+`python -m app.run --subject "A. Muller" "How do I register a new address?"`
+ended `memory.search subject='A. Muller' k=3 2.84s -> 3 hits`. The hits were
+RB-VIGNETTE "How to apply", RB-ARRIVEE "Who must declare", and the
+**superseded** RB-VIGNETTE-2024 "How to apply". The arrival declaration is
+the right answer and came second, and an out-of-date page made the top
+three. Both are things the generation step will have to cope with.
+
+One design consequence: the corpus is shared commune content, so `subject`
+no longer filters what `search` returns. Per-resident facts are still
+written and forgotten by handle, but they are no longer searched. Bringing
+them back means a second, subject-scoped collection merged with the corpus
+results, with the subject filter applied before scoring as week 6 required.
+
+`python -m project.verify` passes, and the gold set holds 58 cases (46 before
+plus 12 added in week 7).
+
+### Deferred
+
+- **The keyword-tie prediction stretch** was not done as a prediction, since
+  I had already seen the full table. Q03, Q04, Q08 and Q10 tie at rank 1. Each
+  shares distinctive words with its gold section ("declare"/"arrival",
+  "permit", "snow"/"pavement").
+- **Superseded content.** Dense ranks RB-VIGNETTE-2024 second on Q01 and Q02,
+  and third in the wiring check. Nothing filters it out yet. A metadata
+  filter on a `superseded` flag is the obvious fix and has not been built.
+- **A weighted keyword scorer** (BM25) was not tried. It is the experiment
+  that would show whether the original Q02 claim holds once keyword search
+  is no longer crude.
+- **What this measurement still cannot tell me:** whether the retrieved
+  chunk contains enough to answer the question, whether a generator would use
+  it, or whether the pipeline refuses on Q12. Rank and recall@5 score
+  retrieval only, and Q12 has no retrieval score at all.
+- **Commit and push** were not done in this session.
