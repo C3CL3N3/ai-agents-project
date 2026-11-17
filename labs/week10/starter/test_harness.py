@@ -111,7 +111,16 @@ def test_judge_agrees_with_human_labels():
     metric anywhere in your report means anything, which is why it is a
     test and not a paragraph in a README.
     """
-    raise NotImplementedError("TODO 5a")
+    judgments = J.load_recorded()
+    if not judgments:
+        pytest.skip("no judgments recorded yet, run 02_judge.py")
+    agreement = J.validate(judgments)
+    # 10 of 12: the four control cases must all agree, and at most two of
+    # the eight arguable ones may differ. Below that the judge is not a
+    # control for anything.
+    assert agreement.rate >= 0.8, (
+        f"judge agrees with only {agreement.agreed}/{agreement.n} labels "
+        f"at threshold {J.THRESHOLD}: {agreement.confusion()}")
 
 
 @pytest.mark.judged
@@ -122,7 +131,15 @@ def test_judge_makes_no_false_passes():
     went green on an invented answer. Forbid only the second, and say in
     one comment why you are not forbidding both.
     """
-    raise NotImplementedError("TODO 5b")
+    judgments = J.load_recorded()
+    if not judgments:
+        pytest.skip("no judgments recorded yet, run 02_judge.py")
+    # Only false passes are forbidden: a false pass is a green gate on an
+    # invented answer, while a false fail only costs a human a second look.
+    confusion = J.validate(judgments).confusion()
+    assert confusion["false_pass"] == 0, (
+        f"the judge passed {confusion['false_pass']} answer(s) a human "
+        f"failed at threshold {J.THRESHOLD}")
 
 
 @pytest.mark.judged
@@ -134,4 +151,12 @@ def test_threshold_is_not_on_a_cliff():
     are about to report is an artefact of a library default that nobody
     chose, and you should find that out now rather than in week 12.
     """
-    raise NotImplementedError("TODO 5c")
+    judgments = J.load_recorded()
+    if not judgments:
+        pytest.skip("no judgments recorded yet, run 02_judge.py")
+    rates = {t: J.validate(judgments, threshold=t).rate
+             for t in (J.THRESHOLD - 0.05, J.THRESHOLD, J.THRESHOLD + 0.05)}
+    spread = max(rates.values()) - min(rates.values())
+    assert spread <= 1 / 12 + 1e-9, (
+        f"moving the threshold by 0.05 moves agreement by {spread:.2f}: "
+        f"{ {round(k, 2): round(v, 2) for k, v in rates.items()} }")

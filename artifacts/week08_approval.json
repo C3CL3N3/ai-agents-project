@@ -1,0 +1,13 @@
+{
+  "case_id": "RB-2026-0042",
+  "verdict": "timeout",
+  "by": "system:timeout",
+  "waited_s": 1.0,
+  "submitted": false,
+  "events": [
+    "search:okx1",
+    "fees:okx1",
+    "draft",
+    "gate:timeout:system:timeout"
+  ]
+}

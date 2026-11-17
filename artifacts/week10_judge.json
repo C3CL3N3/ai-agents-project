@@ -1,0 +1,175 @@
+{
+  "threshold": 0.5,
+  "rows": [
+    {
+      "case_id": "L-01",
+      "human": "pass",
+      "judge": "pass",
+      "score": 1.0,
+      "why_human": "it is the expected answer",
+      "why_judge": "The actual output directly answers the input question with the same information as the expected output, including the cost and application location. No invented or external details are present, and all components are explicitly stated in the expected output. The actual output is a subset of the expected output with no additions or fabrications, fully aligning with all evaluation steps.",
+      "seconds": 22.8
+    },
+    {
+      "case_id": "L-02",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.0,
+      "why_human": "invented fee, 85 for 60",
+      "why_judge": "The actual output states a vignette cost of 85 EUR, which contradicts the expected output's stated cost of 60 EUR. This introduces a fact not present in the expected output, violating step 2. Additionally, the actual output includes a detail (85 EUR) not found in the expected output, failing step 4. Thus, the response contains invented or incorrect information.",
+      "seconds": 1.9
+    },
+    {
+      "case_id": "L-03",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.0,
+      "why_human": "does not answer the question",
+      "why_judge": "The actual output mentions 'the library is open on Saturday mornings', which is entirely unrelated to the input question about the vignette cost and application location. The expected output specifies the cost and application details, neither of which are addressed in the actual output. The actual output introduces facts (library hours) not present in the expected output, violating step 2. Additionally, it fails to address the required components of the answer, violating step 3. Thus, the actual output does not meet the criteria of being a subset of the expected output or directly answering the input question with only explicitly stated information.",
+      "seconds": 2.7
+    },
+    {
+      "case_id": "L-04",
+      "human": "pass",
+      "judge": "pass",
+      "score": 1.0,
+      "why_human": "exactly right",
+      "why_judge": "The actual output correctly states that bulky waste is collected on the first Saturday of the month by appointment, which is explicitly present in the expected output. It does not introduce any facts not found in the expected output, such as details about residual waste collection, and does not mention fees, deadlines, or office names. The output is complete for the input question and contains only information that is a subset of the expected output, satisfying all evaluation steps.",
+      "seconds": 2.1
+    },
+    {
+      "case_id": "L-05",
+      "human": "pass",
+      "judge": "fail",
+      "score": 0.3,
+      "why_human": "correct, incomplete, invents nothing",
+      "why_judge": "The actual output states the cost of the vignette but omits the application location and proof of residence, which are explicitly mentioned in the expected output. It also fails to mention 'residential' parking, which is part of the expected content. As a result, it includes information not present in the expected output, violating step 1 and step 4. The response is incomplete and contains fabrications beyond the expected facts.",
+      "seconds": 2.0
+    },
+    {
+      "case_id": "L-06",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.3,
+      "why_human": "right fee, invented channel",
+      "why_judge": "The actual output mentions 'apply online through the citizen portal', which is not present in the expected output and contradicts the specified application location at the Bierger-Center. Additionally, it introduces 'online' and 'citizen portal' as application methods not found in the expected output, violating the requirement to only use facts explicitly present in the expected output. These invented elements reduce alignment with the evaluation steps.",
+      "seconds": 1.9
+    },
+    {
+      "case_id": "L-07",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.0,
+      "why_human": "honest, but it did not answer",
+      "why_judge": "The actual output states 'I do not have information about the vignette', which contradicts the expected output that explicitly states the cost and application location. This introduces a fact (lack of information) not present in the expected output, violating step 2. Additionally, the actual output fails to include any factual content from the expected output, making it incomplete and misaligned with the required information. Thus, it does not meet the criteria of being a subset of the expected output.",
+      "seconds": 2.2
+    },
+    {
+      "case_id": "L-08",
+      "human": "pass",
+      "judge": "pass",
+      "score": 1.0,
+      "why_human": "same facts, different words and a spelled number",
+      "why_judge": "The actual output correctly states the cost as sixty euros and mentions applying at the Bierger-Center with proof of residence, both of which are explicitly present in the expected output. It does not introduce any fees, deadlines, or office names not in the expected output. All facts in the actual output are a subset of the expected output, with no invented or inferred details. The response is complete and directly answers the input question using only information from the expected output.",
+      "seconds": 2.2
+    },
+    {
+      "case_id": "L-09",
+      "human": "pass",
+      "judge": "pass",
+      "score": 1.0,
+      "why_human": "true, drops the appointment requirement",
+      "why_judge": "The actual output correctly states that bulky waste is collected on the first Saturday of the month, which is present in the expected output. It does not introduce any new information, such as fees, deadlines, or office names, and does not invent details like collection by appointment. However, it omits the 'by appointment' detail from the expected output, which is a factual component of the expected answer. Since the actual output is a subset of the expected output in terms of facts and does not include any invented elements, it satisfies the evaluation criteria. The omission of 'by appointment' does not constitute a violation of the rules as long as no invented facts are present. Thus, the response is accurate and aligned with the expected output in all factual content.",
+      "seconds": 3.3
+    },
+    {
+      "case_id": "L-10",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.3,
+      "why_human": "answers about the wrong waste stream",
+      "why_judge": "The actual output states 'Waste is collected on Tuesdays', which introduces the concept of 'waste' without specifying it as residual waste, and does not mention bulky waste collection at all. The expected output explicitly states that bulky waste is collected on the first Saturday of the month by appointment. The actual output fails to include this key factual detail and invents a general statement about waste collection not present in the expected output. This violates step 4, which requires all factual content in the actual output to be a subset of the expected output. Thus, the response is incomplete and contains fabricated or missing information.",
+      "seconds": 2.7
+    },
+    {
+      "case_id": "L-11",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.4,
+      "why_human": "the 48 hours is invented",
+      "why_judge": "The actual output includes the correct information that bulky waste is collected on the first Saturday of the month, which is present in the expected output. However, it introduces the detail 'Please book at least 48 hours in advance', which is not in the expected output and is an invention beyond stated facts. This violates evaluation step 2, which requires no facts to be inferred or added beyond the expected output. Thus, the response contains an invented element and fails to meet the criteria of factual subset compliance.",
+      "seconds": 2.3
+    },
+    {
+      "case_id": "L-12",
+      "human": "fail",
+      "judge": "fail",
+      "score": 0.4,
+      "why_human": "mostly right, then invents a waiting list",
+      "why_judge": "The actual output includes details about proof of residence and a waiting list, which are not present in the expected output and thus violate step 2. Additionally, the mention of 'waiting list' is an inference not supported by the expected output. While the cost and application location are correctly stated and match the expected output, these invented elements reduce alignment with the evaluation steps. Therefore, the response contains fabricated facts beyond the expected output.",
+      "seconds": 2.0
+    }
+  ],
+  "confusion": {
+    "true_pass": 4,
+    "true_fail": 7,
+    "false_pass": 0,
+    "false_fail": 1
+  },
+  "sweep": [
+    {
+      "threshold": 0.15,
+      "agreement": 0.6666666666666666,
+      "false_pass": 4,
+      "false_fail": 0
+    },
+    {
+      "threshold": 0.25,
+      "agreement": 0.6666666666666666,
+      "false_pass": 4,
+      "false_fail": 0
+    },
+    {
+      "threshold": 0.35,
+      "agreement": 0.75,
+      "false_pass": 2,
+      "false_fail": 1
+    },
+    {
+      "threshold": 0.45,
+      "agreement": 0.9166666666666666,
+      "false_pass": 0,
+      "false_fail": 1
+    },
+    {
+      "threshold": 0.5,
+      "agreement": 0.9166666666666666,
+      "false_pass": 0,
+      "false_fail": 1
+    },
+    {
+      "threshold": 0.55,
+      "agreement": 0.9166666666666666,
+      "false_pass": 0,
+      "false_fail": 1
+    },
+    {
+      "threshold": 0.65,
+      "agreement": 0.9166666666666666,
+      "false_pass": 0,
+      "false_fail": 1
+    },
+    {
+      "threshold": 0.75,
+      "agreement": 0.9166666666666666,
+      "false_pass": 0,
+      "false_fail": 1
+    },
+    {
+      "threshold": 0.85,
+      "agreement": 0.9166666666666666,
+      "false_pass": 0,
+      "false_fail": 1
+    }
+  ]
+}

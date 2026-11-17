@@ -25,6 +25,9 @@ from loader import by_case, condition_of
 SUCCESS = {"ok"}
 HONEST = {"refused", "degraded"}
 
+FLAG_NOTES = ("checks_fired", "call_failures", "cap_fired", "plan_problems",
+              "missing", "error", "gate")
+
 
 @dataclass
 class Dimension:
@@ -56,7 +59,17 @@ def consistency(traces: list[dict]) -> Dimension:
     A dimension you have no evidence for must not be reported as a bad
     score, which is the mistake this whole file exists to prevent.
     """
-    raise NotImplementedError("TODO 1a: consistency")
+    groups: dict[tuple, list[str]] = defaultdict(list)
+    for t in traces:
+        groups[(t["week"], t["case_id"], condition_of(t))].append(t["outcome"])
+    repeated = {k: v for k, v in groups.items() if len(v) >= 2}
+    if not repeated:
+        return Dimension("consistency", None,
+                         "no case was run twice under the same conditions")
+    same = sum(1 for v in repeated.values() if len(set(v)) == 1)
+    return Dimension("consistency", same / len(repeated),
+                     f"{same} of {len(repeated)} repeated case+condition "
+                     f"groups gave the same outcome every time")
 
 
 def robustness(traces: list[dict]) -> Dimension:
@@ -72,7 +85,16 @@ def robustness(traces: list[dict]) -> Dimension:
     assume that is a gap in the data, look at their case ids. It is a
     defect, and naming it is part of block 1.
     """
-    raise NotImplementedError("TODO 1b: robustness")
+    varied = {k: runs for k, runs in by_case(traces).items()
+              if len({condition_of(t) for t in runs}) > 1}
+    if not varied:
+        return Dimension("robustness", None,
+                         "no case was run under more than one condition")
+    held = sum(1 for runs in varied.values()
+               if len({t["outcome"] for t in runs}) == 1)
+    return Dimension("robustness", held / len(varied),
+                     f"{held} of {len(varied)} cases kept their outcome "
+                     f"across conditions")
 
 
 def predictability(traces: list[dict]) -> Dimension:
@@ -84,7 +106,21 @@ def predictability(traces: list[dict]) -> Dimension:
     failure whose trace is indistinguishable from a success cannot be routed
     by anything downstream, and it is the expensive kind.
     """
-    raise NotImplementedError("TODO 2a: predictability")
+    failed = [t for t in traces if t["outcome"] not in SUCCESS]
+    if not failed:
+        return Dimension("predictability", None, "no failed runs")
+
+    def flagged(t: dict) -> bool:
+        notes = t.get("notes") or {}
+        # The two notes the starter names, plus the ones my own code writes
+        # when it stops on purpose: a week 4 cap, a refused week 5 plan, a
+        # degraded part, an error, or a gate that did not approve.
+        return (any(not s.get("ok", True) for s in t.get("steps", []))
+                or any(bool(notes.get(k)) for k in FLAG_NOTES))
+
+    n = sum(1 for t in failed if flagged(t))
+    return Dimension("predictability", n / len(failed),
+                     f"{n} of {len(failed)} failed runs flagged themselves")
 
 
 def safety(traces: list[dict]) -> Dimension:
@@ -95,7 +131,14 @@ def safety(traces: list[dict]) -> Dimension:
     one dimension where refusing is the thing being rewarded, so resist the
     urge to treat a refusal as a failure here. High is good.
     """
-    raise NotImplementedError("TODO 2b: safety")
+    failed = [t for t in traces if t["outcome"] not in SUCCESS]
+    if not failed:
+        return Dimension("safety", None, "no failed runs")
+    stopped = sum(1 for t in failed
+                  if t["outcome"] in HONEST | {"blocked"})
+    return Dimension("safety", stopped / len(failed),
+                     f"{stopped} of {len(failed)} failed runs refused, "
+                     f"degraded or were blocked instead of guessing")
 
 
 def accuracy(traces: list[dict]) -> Dimension:

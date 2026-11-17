@@ -7,6 +7,9 @@ confidence.
 
 from __future__ import annotations
 
+import os
+import time
+from pathlib import Path
 from typing import Annotated, TypedDict
 
 from faults import ContractDrift, FaultPlan
@@ -50,7 +53,24 @@ def validate_fee(value) -> None:
     the success path. If you have no validation, a renamed field flows all
     the way to the answer and the run reports success.
     """
-    raise NotImplementedError("TODO 4: validate the fee contract")
+    if not isinstance(value, dict):
+        raise ContractDrift(f"fee is not an object: {str(value)[:40]!r}")
+    if not value:
+        raise ContractDrift("fee lookup returned nothing")
+    if "fee_eur" not in value:
+        raise ContractDrift(f"fee_eur missing, got keys {sorted(value)}")
+    if not isinstance(value["fee_eur"], (int, float)) or value["fee_eur"] < 0:
+        raise ContractDrift(f"fee_eur is not a number: {value['fee_eur']!r}")
+    if "period" not in value:
+        raise ContractDrift("period missing")
+
+
+def validate_passages(value) -> None:
+    """Search must return a list of strings. An HTML error page is not one."""
+    if not isinstance(value, list) or not all(isinstance(p, str)
+                                              for p in value):
+        raise ContractDrift(f"search did not return passages: "
+                            f"{str(value)[:40]!r}")
 
 
 # --------------------------------------------------------------------------
@@ -73,7 +93,24 @@ def gather(state: CaseState, plan: FaultPlan) -> dict:
     Record what is absent in `missing` so `draft` can say it out loud, and
     append to `events` so the checkpoint has something to count.
     """
-    raise NotImplementedError("TODO 3a: gather with a policy")
+    res = call_with_policy(tools.search, plan, state["topic"],
+                           policy=SEARCH_POLICY,
+                           fallback=tools.keyword_fallback,
+                           validate=validate_passages)
+    events = [f"search:{res.outcome}x{res.tries}"]
+    if not res.ok:
+        return {"passages": [], "degraded": True,
+                "missing": ["handbook passage (search is down)"],
+                "events": events}
+    if not res.value:
+        # Empty is the tool saying "I do not cover this". Not an error, and
+        # not something to answer from: degrade and say so.
+        return {"passages": [], "degraded": True,
+                "missing": ["handbook passage (search found nothing)"],
+                "events": events + ["search:empty"]}
+    if res.used_fallback:
+        events.append("search:used_fallback")
+    return {"passages": list(res.value), "events": events}
 
 
 def price(state: CaseState, plan: FaultPlan) -> dict:
@@ -82,7 +119,14 @@ def price(state: CaseState, plan: FaultPlan) -> dict:
     This is the step contract drift hits. Without a validator the renamed
     field flows into the answer and the run reports success.
     """
-    raise NotImplementedError("TODO 3b: price with validation")
+    res = call_with_policy(tools.fees, plan, state["topic"],
+                           policy=FEES_POLICY, validate=validate_fee)
+    events = [f"fees:{res.outcome}x{res.tries}"]
+    if not res.ok:
+        return {"fee": {}, "degraded": True,
+                "missing": ["fee (lookup failed or changed shape)"],
+                "events": events}
+    return {"fee": res.value, "events": events}
 
 
 def draft(state: CaseState) -> dict:
@@ -95,8 +139,17 @@ def draft(state: CaseState) -> dict:
     A degrade path that returns an empty string is technically graceful and
     completely useless.
     """
-    raise NotImplementedError(
-        "TODO 5: assemble the answer and name what is missing")
+    parts = [f"Case {state['case_id']}, topic: {state['topic']}."]
+    if state.get("passages"):
+        parts.append("Handbook: " + " ".join(state["passages"]))
+    fee = state.get("fee") or {}
+    if fee.get("fee_eur") is not None:
+        parts.append(f"Fee: {fee['fee_eur']:.2f} EUR per {fee['period']}.")
+    missing = sorted(set(state.get("missing", [])))
+    if missing:
+        parts.append("INCOMPLETE ANSWER. Missing: " + "; ".join(missing)
+                     + ". Please check with the help desk on 4796-2222.")
+    return {"draft": " ".join(parts), "events": ["draft"]}
 
 
 def submit(state: CaseState) -> dict:
@@ -110,6 +163,16 @@ def submit(state: CaseState) -> dict:
     outside world is not. A write above this line happens twice and appears
     once. `02_gate.py` demonstrates it.
     """
+    if os.environ.get("W08_WRITE_ABOVE") == "1":
+        # DELIBERATE BUG, for the checklist item only: a write above the
+        # interrupt. It appends one line to a log file every time this node
+        # starts, so the log shows how often it really ran.
+        log = (Path(__file__).resolve().parents[3] / "artifacts"
+               / "week08_side_effect.log")
+        with log.open("a", encoding="utf-8") as f:
+            f.write(f"WROTE_ABOVE_INTERRUPT {state['case_id']} "
+                    f"pid={os.getpid()}\n")
+
     decision = interrupt({
         "action": "submit_case",
         "case_id": state["case_id"],
@@ -120,6 +183,9 @@ def submit(state: CaseState) -> dict:
         "evidence": state.get("passages", []),
         "degraded": state.get("degraded", False),
         "missing": sorted(set(state.get("missing", []))),
+        # When it was asked, so an unanswered approval can time out.
+        # Inside the payload, so it survives the process with the pause.
+        "asked_at": time.time(),
     })
 
     verdict = decision.get("verdict")
@@ -133,6 +199,11 @@ def submit(state: CaseState) -> dict:
                 "fee": edited.get("fee", state.get("fee", {})),
                 "side_effects": [f"SUBMITTED {state['case_id']} (edited)"],
                 "events": [f"gate:edit:{decision.get('by', '?')}"]}
+    if verdict == "timeout":
+        # Nobody answered in time. The default is NOT to submit: the case
+        # stays held for a person, and the timeout is recorded as such.
+        return {"submitted": False, "decision": "timeout",
+                "events": [f"gate:timeout:{decision.get('by', '?')}"]}
     return {"submitted": False, "decision": verdict or "reject",
             "events": [f"gate:{verdict or 'reject'}:"
                        f"{decision.get('by', '?')}"]}

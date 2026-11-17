@@ -89,7 +89,44 @@ def run_checks(fields: dict[str, str | None]) -> CheckReport:
     with each other will pass every one of these. Try it on paper before
     you decide your checks are finished.
     """
-    raise NotImplementedError("TODO 3: run_checks")
+    fired: list[str] = []
+    net = parse_amount(fields.get("net_amount"))
+    vat = parse_amount(fields.get("vat_amount"))
+    total = parse_amount(fields.get("total_amount"))
+    parsed = {"net": net, "vat": vat, "total": total}
+
+    # 0. An amount that did not come back (or did not parse) is not a pass.
+    for name, value in parsed.items():
+        if value is None:
+            fired.append(f"missing_{name}")
+
+    # 1. Arithmetic, to the cent
+    if None not in (net, vat, total) and abs(net + vat - total) >= 0.01:
+        fired.append(f"arithmetic: {net} + {vat} != {total}")
+
+    # 2. VAT rate: vat must be net * 17 percent, allowing one cent rounding
+    if net and vat is not None and abs(net * VAT_RATE - vat) > 0.011:
+        fired.append(f"vat_rate: {vat / net:.4f} != {VAT_RATE}")
+
+    # 3. Formats. A missing purchase order (None) is legitimate.
+    inv = fields.get("invoice_number")
+    if inv is None or not INVOICE_RE.match(str(inv)):
+        fired.append(f"format_invoice_number: {inv!r}")
+    po = fields.get("purchase_order")
+    if po is not None and not PO_RE.match(str(po)):
+        fired.append(f"format_purchase_order: {po!r}")
+    cur = fields.get("currency")
+    if cur not in CURRENCIES:
+        fired.append(f"format_currency: {cur!r}")
+
+    # 4. Plausibility: this supplier invoices between 10 and 10 000 EUR
+    if total is not None and not (PLAUSIBLE_MIN <= total <= PLAUSIBLE_MAX):
+        fired.append(f"implausible_total: {total}")
+
+    return CheckReport(fired=fired, parsed=parsed)
+
+
+PLAUSIBLE_MIN, PLAUSIBLE_MAX = 10.0, 10_000.0
 
 
 # --------------------------------------------------------------------------

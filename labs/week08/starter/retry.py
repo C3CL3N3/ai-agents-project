@@ -72,7 +72,12 @@ def is_retryable(exc: BaseException) -> bool:
     a broken credential into a slow broken credential, and on some upstreams
     into a locked account.
     """
-    raise NotImplementedError("TODO 1: which errors are retryable")
+    # Transport trouble: the upstream is having a moment. Contract drift is
+    # deliberately excluded: the call succeeded, so a retry returns the same
+    # valid, wrong response again. Anything unknown is not retried either.
+    if isinstance(exc, ContractDrift):
+        return False
+    return isinstance(exc, (ToolTimeout, RateLimited, ServerError))
 
 
 # --------------------------------------------------------------------------
@@ -105,4 +110,46 @@ def call_with_policy(fn, *args, policy: StepPolicy, fallback=None,
     ladder skips past retrying straight to the fallback. If you find
     yourself retrying a drifted response, TODO 1 is wrong.
     """
-    raise NotImplementedError("TODO 2: the retry ladder")
+    result = StepResult()
+    started = time.monotonic()
+
+    # 1. retry, by policy
+    for n in range(1, max(1, policy.attempts) + 1):
+        try:
+            value = fn(*args, **kwargs)
+            if validate is not None:
+                validate(value)
+        except Exception as exc:                          # noqa: BLE001
+            attempt = Attempt(n, f"{type(exc).__name__}: {exc}")
+            result.attempts.append(attempt)
+            if not is_retryable(exc) or n >= policy.attempts:
+                break
+            delay = policy.base_delay * (2 ** (n - 1))    # exponential
+            if policy.jitter:
+                delay = random.uniform(0, delay)          # full jitter
+            if time.monotonic() - started + delay > policy.max_elapsed:
+                break                                     # second cap
+            time.sleep(delay)
+            attempt.slept = delay
+            continue
+        result.attempts.append(Attempt(n, None))
+        result.value, result.ok, result.outcome = value, True, "ok"
+        return result
+
+    # 2. fallback, a different and worse call, validated the same way
+    if fallback is not None:
+        try:
+            value = fallback(*args, **kwargs)
+            if validate is not None:
+                validate(value)
+            result.value, result.ok = value, True
+            result.used_fallback, result.outcome = True, "fallback"
+            return result
+        except Exception:                                 # noqa: BLE001
+            result.used_fallback = True
+
+    # 3. degrade or escalate, as the policy chose in advance
+    result.value, result.ok = None, False
+    result.outcome = ("escalated" if policy.on_exhausted == "escalate"
+                      else "degraded")
+    return result

@@ -1,0 +1,337 @@
+[
+  {
+    "name": "policy:search",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0xb566b7ad939680f3",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x2a6f9e8ed1aea1f5",
+    "start_time": "2026-11-17T16:58:28.631873Z",
+    "end_time": "2026-11-17T16:58:28.753942Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {
+      "tries": 3,
+      "outcome": "fallback",
+      "used_fallback": true
+    },
+    "events": [
+      {
+        "name": "attempt",
+        "timestamp": "2026-11-17T16:58:28.753553Z",
+        "attributes": {
+          "n": 1,
+          "error": "ToolTimeout: search timed out",
+          "slept_s": 0.047
+        }
+      },
+      {
+        "name": "retry.attempt",
+        "timestamp": "2026-11-17T16:58:28.753766Z",
+        "attributes": {
+          "n": 2,
+          "error": "ToolTimeout: search timed out",
+          "slept_s": 0.074
+        }
+      },
+      {
+        "name": "retry.attempt",
+        "timestamp": "2026-11-17T16:58:28.753838Z",
+        "attributes": {
+          "n": 3,
+          "error": "ToolTimeout: search timed out",
+          "slept_s": 0.0
+        }
+      },
+      {
+        "name": "fallback",
+        "timestamp": "2026-11-17T16:58:28.753866Z",
+        "attributes": {
+          "fn": "keyword_fallback"
+        }
+      }
+    ],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "node:gather",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0x2a6f9e8ed1aea1f5",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x72bac7f42cdbf9e9",
+    "start_time": "2026-11-17T16:58:28.631851Z",
+    "end_time": "2026-11-17T16:58:28.754088Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {},
+    "events": [],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "policy:fees",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0xfe71d7ba78f29179",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0xec0280aabeb9b3ee",
+    "start_time": "2026-11-17T16:58:28.757663Z",
+    "end_time": "2026-11-17T16:58:28.806318Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {
+      "tries": 2,
+      "outcome": "ok",
+      "used_fallback": false
+    },
+    "events": [
+      {
+        "name": "attempt",
+        "timestamp": "2026-11-17T16:58:28.806233Z",
+        "attributes": {
+          "n": 1,
+          "error": "ServerError: fees returned 500 (flaky, first call)",
+          "slept_s": 0.048
+        }
+      },
+      {
+        "name": "retry.attempt",
+        "timestamp": "2026-11-17T16:58:28.806277Z",
+        "attributes": {
+          "n": 2,
+          "error": "",
+          "slept_s": 0.0
+        }
+      }
+    ],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "node:price",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0xec0280aabeb9b3ee",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x72bac7f42cdbf9e9",
+    "start_time": "2026-11-17T16:58:28.757459Z",
+    "end_time": "2026-11-17T16:58:28.806404Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {},
+    "events": [],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "node:draft",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0x6d825ac22c99fa39",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x72bac7f42cdbf9e9",
+    "start_time": "2026-11-17T16:58:28.808522Z",
+    "end_time": "2026-11-17T16:58:28.808564Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {},
+    "events": [],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "node:submit",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0x40fbd7cb434a8cc6",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x72bac7f42cdbf9e9",
+    "start_time": "2026-11-17T16:58:28.810903Z",
+    "end_time": "2026-11-17T16:58:28.811013Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {},
+    "events": [
+      {
+        "name": "gate.interrupt",
+        "timestamp": "2026-11-17T16:58:28.810993Z",
+        "attributes": {
+          "type": "GraphInterrupt"
+        }
+      }
+    ],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "node:submit",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0xf536ca1b08401d8d",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0xb49645de19afd1ba",
+    "start_time": "2026-11-17T16:58:28.813731Z",
+    "end_time": "2026-11-17T16:58:28.813770Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {},
+    "events": [],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "gate:resume",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0xb49645de19afd1ba",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x72bac7f42cdbf9e9",
+    "start_time": "2026-11-17T16:58:28.812322Z",
+    "end_time": "2026-11-17T16:58:28.814656Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {
+      "verdict": "approve",
+      "by": "script:03_otel"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  },
+  {
+    "name": "run:RB-2026-0042",
+    "context": {
+      "trace_id": "0xfc22c29dd911a3e326831e88f71a144a",
+      "span_id": "0x72bac7f42cdbf9e9",
+      "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": null,
+    "start_time": "2026-11-17T16:58:28.629894Z",
+    "end_time": "2026-11-17T16:58:28.814677Z",
+    "status": {
+      "status_code": "UNSET"
+    },
+    "attributes": {
+      "submitted": true
+    },
+    "events": [
+      {
+        "name": "gate.paused",
+        "timestamp": "2026-11-17T16:58:28.812267Z",
+        "attributes": {
+          "action": "submit_case"
+        }
+      }
+    ],
+    "links": [],
+    "resource": {
+      "attributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.45.2",
+        "service.instance.id": "00645e2c-ad90-41cd-837a-74cd21df9117",
+        "service.name": "unknown_service:python"
+      },
+      "schema_url": ""
+    }
+  }
+]

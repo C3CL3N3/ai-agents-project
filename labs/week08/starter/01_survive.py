@@ -116,3 +116,18 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --------------------------------------------------------------------------
+# TODO 6, the written answer.
+# --------------------------------------------------------------------------
+#
+# Baseline: correct 1, WRONG 0, degraded 2, failed 5.
+# Hardened: correct 2, WRONG 0, degraded 5, failed 1.
+#
+# Hardening did not mostly buy correct answers (only flaky became correct).
+# It turned four outright failures into degraded answers that say what is
+# missing. Drift is caught by validate_fee on the first attempt (fees x1),
+# not retried, because the call succeeded. The one failure left is `empty`:
+# both tools answered "nothing", there is nothing to degrade to, and the
+# pipeline says so instead of answering from nothing.

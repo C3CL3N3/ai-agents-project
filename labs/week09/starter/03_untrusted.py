@@ -77,7 +77,16 @@ def code_triage(fields: dict, report) -> tuple[bool, str]:
     unable to move the outcome, and you should be able to defend it by
     pointing at the function rather than by re-running a test.
     """
-    raise NotImplementedError("TODO 5: code_triage")
+    # Only numbers from report.parsed and the list of fired checks are read.
+    # `fields` (the page's strings) is deliberately never looked at here.
+    total = report.parsed.get("total")
+    if report.fired:
+        return False, f"check fired: {report.fired[0]}"
+    if total is None:
+        return False, "no readable total"
+    if total > AUTO_APPROVE_LIMIT_EUR:
+        return False, f"total {total:.2f} over {AUTO_APPROVE_LIMIT_EUR:.0f} EUR"
+    return True, f"checks clean and total {total:.2f} under the limit"
 
 
 def model_triage(doc: str, replay) -> tuple[bool | None, str]:
